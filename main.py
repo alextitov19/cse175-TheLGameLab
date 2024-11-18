@@ -67,6 +67,9 @@ def main():
 
     visualizer = GameVisualizer(game_state.board)
 
+    visualizer.draw_board()
+
+
     while not game_state.is_terminal():
         print(f"\nPlayer {game_state.current_player}'s turn.")
         if (mode == "1") or (mode == "2" and game_state.current_player == 1):
