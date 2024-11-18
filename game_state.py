@@ -33,21 +33,18 @@ class GameState:
         """
         Place the initial L pieces and neutral pieces on the board.
         """
+        # Initialize board
         self.board = [[0 for _ in range(4)] for _ in range(4)]
 
         # Place neutral pieces
         for x, y in self.neutral_positions:
             self.board[y][x] = "N"
 
-        # Place Player 1's L-piece (config 0)
-        for px, py in get_l_positions(1, 1, 0):
-            print("Player 1's L-piece", px, py)
-            self.board[py][px] = 1
-
-        # Place Player 2's L-piece (config 3)
-        for px, py in get_l_positions(2, 2, 3):
-            print("Player 2's L-piece", px, py)
-            self.board[py][px] = 2
+        # Place L-pieces for both players dynamically from self.l_positions
+        for player, l_data in self.l_positions.items():
+            x, y, config = l_data["x"], l_data["y"], l_data["config"]
+            for px, py in get_l_positions(x, y, config):
+                self.board[py][px] = player
 
     def copy(self):
         """

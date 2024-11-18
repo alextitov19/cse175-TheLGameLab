@@ -54,8 +54,6 @@ def main():
     print("2. Human vs Computer")
     print("3. Computer vs Computer")
 
-    draw_all_l_configurations()
-
 
     mode = input("Enter the mode number (1, 2, or 3): ")
     if mode not in {"1", "2", "3"}:
