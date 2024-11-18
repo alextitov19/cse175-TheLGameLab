@@ -19,8 +19,8 @@ class GameState:
         self.neutral_positions = [(0, 0), (3, 3)]
 
         self.l_positions = {
-            1: {"x": 1, "y": 1, "orientation": "E"},  # Player 1's L-piece
-            2: {"x": 1, "y": 0, "orientation": "E"},  # Player 2's L-piece
+            1: {"x": 1, "y": 1, "config": 0},  # Player 1's L-piece
+            2: {"x": 2, "y": 2, "config": 3},  # Player 2's L-piece
         }
 
         # Place the pieces on the board
@@ -44,7 +44,7 @@ class GameState:
             print("Player 1's L-piece", px, py)
             self.board[py][px] = 1
 
-        # Place Player 2's L-piece (config 4)
+        # Place Player 2's L-piece (config 3)
         for px, py in get_l_positions(2, 2, 3):
             print("Player 2's L-piece", px, py)
             self.board[py][px] = 2
@@ -65,6 +65,7 @@ class GameState:
         Get all legal moves for the given player.
         """
         legal_moves = []
+        print("Player in get legal moves", player)
 
         # Legal moves for the L piece
         l_data = self.l_positions[player]
@@ -74,7 +75,7 @@ class GameState:
                     l_positions = get_l_positions(x, y, orientation)
                     if all(
                         is_within_bounds(px, py)
-                        and is_position_free(self.board, px, py)
+                        and is_position_free(self.board, px, py, player)
                         for px, py in l_positions
                     ):
                         legal_moves.append({"L_piece": {"x": x, "y": y, "orientation": orientation}})
@@ -83,7 +84,7 @@ class GameState:
         for idx, (nx, ny) in enumerate(self.neutral_positions):
             for x in range(4):
                 for y in range(4):
-                    if is_within_bounds(x, y) and is_position_free(self.board, x, y):
+                    if is_within_bounds(x, y) and is_position_free(self.board, x, y, player):
                         neutral_move = {"from": (nx, ny), "to": (x, y)}
                         legal_moves.append({"neutral_move": neutral_move})
 
@@ -100,7 +101,7 @@ class GameState:
         if l_data:
             player = self.current_player
             self._clear_l_piece(player)
-            l_positions = get_l_positions(l_data["x"], l_data["y"], l_data["orientation"])
+            l_positions = get_l_positions(l_data["x"], l_data["y"], l_data["config"])
             for x, y in l_positions:
                 self.board[y][x] = player
             self.l_positions[player] = l_data

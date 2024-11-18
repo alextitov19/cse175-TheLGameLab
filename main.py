@@ -16,7 +16,7 @@ def human_move(game_state):
         try:
             move_input = input("Enter your move (e.g., '1 2 E 4 3 1 1'): ")
             move = parse_move_input(move_input)
-            if validate_move(game_state.board, move):
+            if validate_move(game_state.board, move, game_state.current_player):
                 return move
             else:
                 print("Invalid move. Please try again.")

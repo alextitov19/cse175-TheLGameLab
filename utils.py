@@ -40,16 +40,16 @@ def is_within_bounds(x, y):
     return 0 <= x < 4 and 0 <= y < 4
 
 
-def is_position_free(board, x, y):
+def is_position_free(board, x, y, player):
     """
     Check if a position (x, y) is free (not occupied) on the board.
     Returns:
         bool: True if free, False otherwise.
     """
-    return board[y][x] == 0
+    return board[y][x] == 0 or board[y][x] == player
 
 
-def validate_move(board, move):
+def validate_move(board, move, player):
     """
     Validate a move to ensure it adheres to the game's rules.
     Args:
@@ -62,9 +62,15 @@ def validate_move(board, move):
     l_piece = move["L_piece"]
     x, y, config = l_piece["x"], l_piece["y"], l_piece["config"]
     l_positions = get_l_positions(x, y, config)
+    print("Positions:", l_positions)
+
+    if not all(is_within_bounds(px, py) for px, py in l_positions):
+        print("Not within bounds")
+    if not all(is_position_free(board, px, py, player) for px, py in l_positions):
+        print("Not free")
 
     # Ensure all positions are within bounds and free
-    if not all(is_within_bounds(px, py) and is_position_free(board, px, py) for px, py in l_positions):
+    if not all(is_within_bounds(px, py) and is_position_free(board, px, py, player) for px, py in l_positions):
         return False
 
     # Validate neutral piece move, if applicable
@@ -72,7 +78,7 @@ def validate_move(board, move):
     if neutral_move:
         fx, fy = neutral_move["from"]
         tx, ty = neutral_move["to"]
-        if not (is_within_bounds(tx, ty) and is_position_free(board, tx, ty)):
+        if not (is_within_bounds(tx, ty) and is_position_free(board, tx, ty, 0)):
             return False
         if board[fy][fx] != "N":
             return False
