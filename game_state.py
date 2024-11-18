@@ -45,7 +45,7 @@ class GameState:
             self.board[py][px] = 1
 
         # Place Player 2's L-piece (config 4)
-        for px, py in get_l_positions(2, 2, 4):
+        for px, py in get_l_positions(2, 2, 3):
             print("Player 2's L-piece", px, py)
             self.board[py][px] = 2
 
