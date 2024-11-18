@@ -25,7 +25,7 @@ def human_move(game_state):
             print(f"Error: {e}. Try again.")
 
 
-def computer_move(game_state, depth=2):
+def computer_move(game_state, depth=3):
     """
     Determine the computer's move using minimax with alpha-beta pruning.
     """
@@ -75,7 +75,8 @@ def main():
 
         # Apply the move
         game_state.apply_move(move)
-
+    print("\nFinal Board State:")
+    print_board(game_state.board)
     print(f"Game Over! Player {3 - game_state.current_player} wins!")
 
 def debug_apply_move(state, move):
