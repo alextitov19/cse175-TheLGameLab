@@ -5,6 +5,7 @@ from utils import parse_move_input, validate_move, print_board, draw_all_l_confi
 from minimax import alpha_beta_pruning
 from heuristic import evaluate_board
 import math
+from visualizer import GameVisualizer  # Assuming GameVisualizer is defined
 
 
 def human_move(game_state):
@@ -64,6 +65,8 @@ def main():
 
     game_state = GameState()
 
+    visualizer = GameVisualizer(game_state.board)
+
     while not game_state.is_terminal():
         print(f"\nPlayer {game_state.current_player}'s turn.")
         if (mode == "1") or (mode == "2" and game_state.current_player == 1):
@@ -75,10 +78,14 @@ def main():
 
         # Apply the move
         game_state.apply_move(move)
+         # Update the visualizer to reflect the new board state
+        visualizer.update_board(game_state.board)
+
     print("\nFinal Board State:")
     print_board(game_state.board)
     print(f"Game Over! Player {3 - game_state.current_player} wins!")
-
+    visualizer.run()  # Keeps the GUI window open at the end of the game
+    
 def debug_apply_move(state, move):
     """
     Debug wrapper for applying moves to a game state.
