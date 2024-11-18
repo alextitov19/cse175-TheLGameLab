@@ -1,6 +1,6 @@
 # gamestate.py
 
-from utils import is_within_bounds, is_position_free, get_l_positions
+from utils import is_within_bounds, is_position_free, get_l_positions, validate_move
 
 class GameState:
     def __init__(self):
@@ -92,10 +92,12 @@ class GameState:
                                         neutral_move = {"from": (nx, ny), "to": (tx, ty)}
                                         move_with_neutral = move.copy()
                                         move_with_neutral["neutral_move"] = neutral_move
-                                        legal_moves.append(move_with_neutral)
+                                        if validate_move(self.board, move_with_neutral, player):
+                                            legal_moves.append(move_with_neutral)
 
                         # Add the L-piece move without a neutral piece move
-                        legal_moves.append(move)
+                        if validate_move(self.board, move, player):
+                            legal_moves.append(move)
 
         return legal_moves
 
