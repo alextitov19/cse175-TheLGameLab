@@ -46,7 +46,6 @@ def computer_move(game_state, depth=3):
     print(f"Computer's Move: {move}")
     return move
 
-
 def main():
     """
     Main function to run the L-game.
@@ -57,7 +56,6 @@ def main():
     print("2. Human vs Computer")
     print("3. Computer vs Computer")
 
-
     mode = input("Enter the mode number (1, 2, or 3): ")
     if mode not in {"1", "2", "3"}:
         print("Invalid mode. Exiting.")
@@ -67,23 +65,29 @@ def main():
 
     visualizer = GameVisualizer(game_state.board)
 
+    # Draw the initial board before the game loop starts
     visualizer.draw_board()
-
 
     while not game_state.is_terminal():
         print(f"\nPlayer {game_state.current_player}'s turn.")
+
         if (mode == "1") or (mode == "2" and game_state.current_player == 1):
             # Human move
             move = human_move(game_state)
+            game_state.apply_move(move)
+
+            # Update GUI immediately after the human move
+            visualizer.update_board(game_state.board)
+            visualizer.window.update()  # Force GUI to process all events
         else:
             # Computer move
             move = computer_move(game_state)
+            game_state.apply_move(move)
 
-        # Apply the move
-        game_state.apply_move(move)
-         # Update the visualizer to reflect the new board state
-        visualizer.update_board(game_state.board)
+            # Update GUI for the computer's move
+            visualizer.update_board(game_state.board)
 
+    # Final game over logic
     print("\nFinal Board State:")
     print_board(game_state.board)
     print(f"Game Over! Player {3 - game_state.current_player} wins!")
