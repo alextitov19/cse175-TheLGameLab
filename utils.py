@@ -62,7 +62,7 @@ def validate_move(board, move, player):
     l_piece = move["L_piece"]
     x, y, config = l_piece["x"], l_piece["y"], l_piece["config"]
     l_positions = get_l_positions(x, y, config)
-    print("Positions:", l_positions)
+    print("LLLLPositions:", l_positions)
 
     if not all(is_within_bounds(px, py) for px, py in l_positions):
         print("Not within bounds")
@@ -79,6 +79,10 @@ def validate_move(board, move, player):
         fx, fy = neutral_move["from"]
         tx, ty = neutral_move["to"]
         if not (is_within_bounds(tx, ty) and is_position_free(board, tx, ty, 0)):
+            return False
+         # Ensure the neutral piece is not moved to a position occupied by the new L-piece
+        if (tx, ty) in l_positions:
+            print("Neutral piece overlaps with L-piece")
             return False
         if board[fy][fx] != "N":
             return False
