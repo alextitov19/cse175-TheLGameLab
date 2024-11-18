@@ -1,7 +1,7 @@
 # main.py
 
 from game_state import GameState
-from utils import parse_move_input, validate_move, print_board
+from utils import parse_move_input, validate_move, print_board, draw_all_l_configurations
 from minimax import alpha_beta_pruning
 from heuristic import evaluate_board
 import math
@@ -52,6 +52,9 @@ def main():
     print("1. Human vs Human")
     print("2. Human vs Computer")
     print("3. Computer vs Computer")
+
+    draw_all_l_configurations()
+
 
     mode = input("Enter the mode number (1, 2, or 3): ")
     if mode not in {"1", "2", "3"}:

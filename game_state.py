@@ -33,22 +33,21 @@ class GameState:
         """
         Place the initial L pieces and neutral pieces on the board.
         """
-        # Clear the board
         self.board = [[0 for _ in range(4)] for _ in range(4)]
 
         # Place neutral pieces
         for x, y in self.neutral_positions:
             self.board[y][x] = "N"
 
-        # # Place Player 2's L-piece
-        player2_positions = [(1, 0), (2, 0), (2, 1), (2, 2)]
-        for x, y in player2_positions:
-            self.board[y][x] = 2
+        # Place Player 1's L-piece (config 0)
+        for px, py in get_l_positions(1, 1, 0):
+            print("Player 1's L-piece", px, py)
+            self.board[py][px] = 1
 
-        # Place Player 1's L-piece
-        player1_positions = [(1, 1), (1, 2), (1, 3), (2, 3)]
-        for x, y in player1_positions:
-            self.board[y][x] = 1
+        # Place Player 2's L-piece (config 4)
+        for px, py in get_l_positions(2, 2, 4):
+            print("Player 2's L-piece", px, py)
+            self.board[py][px] = 2
 
     def copy(self):
         """
