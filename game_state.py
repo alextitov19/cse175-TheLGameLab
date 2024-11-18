@@ -65,7 +65,7 @@ class GameState:
         Get all legal moves for the given player.
         """
         legal_moves = []
-        print("Player in get legal moves", player)
+        # print("Player in get legal moves", player)
 
         # Legal moves for the L piece
         l_data = self.l_positions[player]

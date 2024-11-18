@@ -169,36 +169,6 @@ def print_board(board):
         print(" ".join(str(cell) if cell != 0 else "." for cell in row))
     print()
 
-    
-def draw_l_piece_preview(x, y, config):
-    """
-    Draw the L-piece on a blank 4x4 board with the specified configuration.
-    Args:
-        x (int): X-coordinate of the L-piece's pivot.
-        y (int): Y-coordinate of the L-piece's pivot.
-        config (int): Configuration ID (0-7).
-    Returns:
-        None: Prints the preview to the console.
-    """
-    # Create a blank 4x4 board
-    blank_board = [["." for _ in range(4)] for _ in range(4)]
-
-    # Get the L-piece positions
-    l_positions = get_l_positions(x, y, config)
-
-    # Mark the L-piece on the blank board
-    for px, py in l_positions:
-        if is_within_bounds(px, py):
-            blank_board[py][px] = "*"
-
-    # Print the configuration info
-    print(f"\nPreview of L-piece (Configuration: {config}):")
-
-    # Print the board
-    for row in blank_board:
-        print(" ".join(row))
-    print()
-
 def draw_all_l_configurations():
     """
     Draw all 8 configurations of the L-piece in 2 rows of 4, each on a 3x3 board, with 5 spaces between each.
