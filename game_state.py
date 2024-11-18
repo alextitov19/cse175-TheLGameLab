@@ -59,31 +59,43 @@ class GameState:
 
     def get_legal_moves(self, player):
         """
-        Get all legal moves for the given player.
+        Get all legal moves for the given player, combining L-piece and neutral piece moves.
+        Args:
+            player (int): The player (1 or 2) whose legal moves are to be generated.
+        Returns:
+            list[dict]: A list of legal moves, each containing the L-piece move and optionally a neutral piece move.
         """
         legal_moves = []
-        # print("Player in get legal moves", player)
 
-        # Legal moves for the L piece
+        # Get the current L-piece position and neutral piece positions
         l_data = self.l_positions[player]
+
+        # Iterate over all possible L-piece configurations
         for x in range(4):
             for y in range(4):
-                for orientation in ["N", "S", "E", "W"]:
-                    l_positions = get_l_positions(x, y, orientation)
+                for config in range(8):  # Use 0-7 for L-piece configurations
+                    l_positions = get_l_positions(x, y, config)
+                    
+                    # Check if the L-piece move is valid
                     if all(
                         is_within_bounds(px, py)
                         and is_position_free(self.board, px, py, player)
                         for px, py in l_positions
                     ):
-                        legal_moves.append({"L_piece": {"x": x, "y": y, "orientation": orientation}})
+                        move = {"L_piece": {"x": x, "y": y, "config": config}, "neutral_move": None}
 
-        # Legal moves for neutral pieces
-        for idx, (nx, ny) in enumerate(self.neutral_positions):
-            for x in range(4):
-                for y in range(4):
-                    if is_within_bounds(x, y) and is_position_free(self.board, x, y, player):
-                        neutral_move = {"from": (nx, ny), "to": (x, y)}
-                        legal_moves.append({"neutral_move": neutral_move})
+                        # Add all possible neutral piece moves
+                        for idx, (nx, ny) in enumerate(self.neutral_positions):
+                            for tx in range(4):
+                                for ty in range(4):
+                                    if is_within_bounds(tx, ty) and is_position_free(self.board, tx, ty, player):
+                                        neutral_move = {"from": (nx, ny), "to": (tx, ty)}
+                                        move_with_neutral = move.copy()
+                                        move_with_neutral["neutral_move"] = neutral_move
+                                        legal_moves.append(move_with_neutral)
+
+                        # Add the L-piece move without a neutral piece move
+                        legal_moves.append(move)
 
         return legal_moves
 
@@ -95,6 +107,7 @@ class GameState:
         """
         # Apply L piece move
         l_data = move.get("L_piece")
+        print("L data", l_data)
         if l_data:
             player = self.current_player
             self._clear_l_piece(player)
