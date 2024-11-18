@@ -62,7 +62,19 @@ def validate_move(board, move, player):
     l_piece = move["L_piece"]
     x, y, config = l_piece["x"], l_piece["y"], l_piece["config"]
     l_positions = get_l_positions(x, y, config)
-    print("LLLLPositions:", l_positions)
+    print("L Positions:", l_positions)
+
+    #  Get the current L-piece positions on the board
+    current_l_positions = []
+    for row in range(4):
+        for col in range(4):
+            if board[row][col] == player:
+                current_l_positions.append((col, row))  # Note: (col, row) matches x, y coordinates
+
+    # Ensure the L-piece is moved to a different position
+    if set(l_positions) == set(current_l_positions):
+        print("L-piece was not moved")
+        return False
 
     if not all(is_within_bounds(px, py) for px, py in l_positions):
         print("Not within bounds")
