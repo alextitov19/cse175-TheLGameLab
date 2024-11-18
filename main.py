@@ -30,6 +30,7 @@ def computer_move(game_state, depth=3):
     Determine the computer's move using minimax with alpha-beta pruning.
     """
     print("Computer is thinking...")
+    print("Terminal state:", game_state.is_terminal())
     move, _ = alpha_beta_pruning(
         state=game_state,
         depth=depth,
@@ -37,8 +38,8 @@ def computer_move(game_state, depth=3):
         beta=math.inf,
         maximizing_player=(game_state.current_player == 1),
         evaluate_fn=evaluate_board,
-        get_legal_moves_fn=lambda state, _: state.get_legal_moves(state.current_player),
-        apply_move_fn=lambda state, move: state.copy().apply_move(move),
+        get_legal_moves_fn=lambda state: state.get_legal_moves(state.current_player),
+        apply_move_fn=lambda state, move: debug_apply_move(state, move),
         is_terminal_fn=lambda state: state.is_terminal(),
     )
     return move
@@ -76,6 +77,21 @@ def main():
 
     print(f"Game Over! Player {3 - game_state.current_player} wins!")
 
-
+def debug_apply_move(state, move):
+    """
+    Debug wrapper for applying moves to a game state.
+    """
+    print(f"Applying move: {move}")
+    new_state = state.copy()
+    if new_state is None:
+        print("Error: state.copy() returned None.")
+        return None
+    try:
+        new_state.apply_move(move)
+        return new_state
+    except Exception as e:
+        print(f"Error during apply_move: {e}")
+        return None
+    
 if __name__ == "__main__":
     main()

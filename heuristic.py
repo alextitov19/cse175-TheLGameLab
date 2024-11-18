@@ -21,9 +21,9 @@ def evaluate_board(state, player):
     opponent_moves = len(state.get_legal_moves(opponent))
 
     # Control of the neutral pieces (e.g., closer neutral pieces give advantage)
-    neutral_control = sum(
-        distance_to_l(state.neutral_positions, state.l_positions[player])
-    )
+    print("L positions", state.l_positions[player])
+    neutral_control = distance_to_l(state.neutral_positions, state.l_positions[player])
+    
 
     # Combine factors into a weighted score
     # Favor states with more moves for the player and fewer moves for the opponent
@@ -35,19 +35,28 @@ def evaluate_board(state, player):
 
     return score
 
+from utils import get_l_positions  # Ensure this is imported
 
-def distance_to_l(neutral_positions, l_positions):
+def distance_to_l(neutral_positions, l_data):
     """
     Calculate the sum of distances from neutral pieces to the L-piece.
-    This can be used as part of the heuristic to control neutral piece placement.
+    Converts the L-piece's corner and config into positions if necessary.
 
     Args:
         neutral_positions (list[tuple]): Positions of neutral pieces [(x1, y1), (x2, y2)].
-        l_positions (list[tuple]): Positions of the L-piece [(x1, y1), ...]
+        l_data (dict or list[tuple]): Either a dictionary with {'x', 'y', 'config'} or a list of tuples.
 
     Returns:
         int: Total distance from neutral pieces to the L-piece.
     """
+    # If l_data is a dictionary, calculate positions using get_l_positions
+    if isinstance(l_data, dict):
+        l_positions = get_l_positions(l_data['x'], l_data['y'], l_data['config'])
+    elif isinstance(l_data, list):
+        l_positions = l_data  # Already in the correct format
+    else:
+        raise ValueError(f"Invalid l_data format: {l_data}")
+
     total_distance = 0
     for nx, ny in neutral_positions:
         min_distance = float("inf")

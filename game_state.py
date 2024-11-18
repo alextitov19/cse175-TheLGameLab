@@ -51,9 +51,9 @@ class GameState:
         Create a deep copy of the game state.
         """
         new_state = GameState()
-        new_state.board = [row[:] for row in self.board]
-        new_state.l_positions = {k: v.copy() for k, v in self.l_positions.items()}
-        new_state.neutral_positions = self.neutral_positions[:]
+        new_state.board = [row[:] for row in self.board]  # Deep copy the board
+        new_state.l_positions = self.l_positions.copy()  # Copy player positions
+        new_state.neutral_positions = self.neutral_positions.copy()  # Copy neutral pieces
         new_state.current_player = self.current_player
         return new_state
 
@@ -102,32 +102,34 @@ class GameState:
     def apply_move(self, move):
         """
         Apply a move to the game state.
-        Args:
-            move (dict): A move dictionary containing L_piece and/or neutral_move.
         """
-        # Apply L piece move
-        l_data = move.get("L_piece")
-        print("L data", l_data)
-        if l_data:
-            player = self.current_player
-            self._clear_l_piece(player)
-            l_positions = get_l_positions(l_data["x"], l_data["y"], l_data["config"])
-            for x, y in l_positions:
-                self.board[y][x] = player
-            self.l_positions[player] = l_data
+        # Extract L-piece move data
+        l_data = move["L_piece"]
+        x, y, config = l_data["x"], l_data["y"], l_data["config"]
+        l_positions = get_l_positions(x, y, config)
 
-        # Apply neutral piece move
-        neutral_move = move.get("neutral_move")
-        if neutral_move:
-            fx, fy = neutral_move["from"]
-            tx, ty = neutral_move["to"]
-            self.board[fy][fx] = 0  # Clear old neutral piece position
-            self.board[ty][tx] = "N"  # Place in the new position
-            self.neutral_positions.remove((fx, fy))
-            self.neutral_positions.append((tx, ty))
+        # Clear the current L-piece positions for the player
+        for row in range(4):
+            for col in range(4):
+                if self.board[row][col] == self.current_player:
+                    self.board[row][col] = 0
 
-        # Switch to the next player
+        # Place the L-piece at the new positions
+        for px, py in l_positions:
+            self.board[py][px] = self.current_player
+
+        # Apply the neutral piece move
+        if move.get("neutral_move"):
+            fx, fy = move["neutral_move"]["from"]
+            tx, ty = move["neutral_move"]["to"]
+
+            # Clear old neutral piece position and place in new position
+            self.board[fy][fx] = 0
+            self.board[ty][tx] = "N"
+
+        # Update the current player
         self.current_player = 3 - self.current_player
+        return self
 
     def _clear_l_piece(self, player):
         """
