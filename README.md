@@ -36,11 +36,12 @@ An interactive implementation of Edward de Bono's **L-Game**. This project suppo
 
 ---
 
-## **Installation**
+## **How to Run the Game**
 
-1. Clone the repository:
+Clone the repository, navigate into it, and run the game:
 
-   ```bash
-   git clone https://github.com/your-username/l-game.git
-   cd l-game
-   ```
+```bash
+git clone <https://github.com/alextitov19/cse175-TheLGameLab>
+cd <rcse175-TheLGameLab>
+python3 main.py
+```
