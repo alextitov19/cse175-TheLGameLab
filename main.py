@@ -50,11 +50,11 @@ def main():
     """
     Main function to run the L-game.
     """
-    print("Welcome to the L-game!")
+    print("\nWelcome to the L-game!\n")
     print("You can choose one of the following modes:")
     print("1. Human vs Human")
     print("2. Human vs Computer")
-    print("3. Computer vs Computer")
+    print("3. Computer vs Computer\n")
 
     mode = input("Enter the mode number (1, 2, or 3): ")
     if mode not in {"1", "2", "3"}:
@@ -63,7 +63,7 @@ def main():
     
     x = 1
     if mode == "2":
-        s = input("Do you want to go first? (y/n): ")
+        s = input("\nDo you want to go first? (y/n): ")
         if s == "n":
             x = 2
         elif s != "y":
