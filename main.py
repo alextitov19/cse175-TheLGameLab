@@ -60,6 +60,16 @@ def main():
     if mode not in {"1", "2", "3"}:
         print("Invalid mode. Exiting.")
         return
+    
+    x = 1
+    if mode == "2":
+        s = input("Do you want to go first? (y/n): ")
+        if s == "n":
+            x = 2
+        elif s != "y":
+            print("Invalid input. Exiting.")
+            return
+            
 
     game_state = GameState()
 
@@ -71,7 +81,7 @@ def main():
     while not game_state.is_terminal():
         print(f"\nPlayer {game_state.current_player}'s turn.")
 
-        if (mode == "1") or (mode == "2" and game_state.current_player == 1):
+        if (mode == "1") or (mode == "2" and game_state.current_player == x):
             # Human move
             move = human_move(game_state)
             game_state.apply_move(move)
