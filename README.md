@@ -43,5 +43,10 @@ Clone the repository, navigate into it, and run the game:
 ```bash
 git clone https://github.com/alextitov19/cse175-TheLGameLab
 cd cse175-TheLGameLab
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the game
 python3 main.py
 ```
