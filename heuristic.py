@@ -1,5 +1,3 @@
-# heuristic.py
-
 def evaluate_board(state, player):
     """
     Heuristic evaluation function for the L-game.

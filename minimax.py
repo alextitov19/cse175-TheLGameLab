@@ -1,5 +1,3 @@
-# minimax.py
-
 import math
 
 

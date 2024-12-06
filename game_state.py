@@ -1,5 +1,3 @@
-# gamestate.py
-
 from utils import is_within_bounds, is_position_free, get_l_positions, validate_move
 
 class GameState:

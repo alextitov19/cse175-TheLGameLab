@@ -1,5 +1,3 @@
-# main.py
-
 from game_state import GameState
 from utils import parse_move_input, validate_move, print_board, draw_all_l_configurations
 from minimax import alpha_beta_pruning
