@@ -1,12 +1,14 @@
 def parse_move_input(input_string):
     """
     Parse a human-readable move input string into a structured format.
+    Converts input from 1-based to 0-based indexing.
+    
     Example input: "1 2 0 4 3 1 1"
     Returns:
         dict: A dictionary containing the parsed move:
               {
-                  "L_piece": {"x": 1, "y": 2, "config": 0},
-                  "neutral_move": {"from": (4, 3), "to": (1, 1)} or None
+                  "L_piece": {"x": 0, "y": 1, "config": 0},
+                  "neutral_move": {"from": (3, 2), "to": (0, 0)} or None
               }
     """
     parts = input_string.split()
@@ -15,17 +17,17 @@ def parse_move_input(input_string):
 
     move = {
         "L_piece": {
-            "x": int(parts[0]),
-            "y": int(parts[1]),
-            "config": int(parts[2])  # Now expects configuration ID
+            "x": int(parts[0]) - 1,
+            "y": int(parts[1]) - 1,
+            "config": int(parts[2])  # Configuration ID remains unchanged
         },
         "neutral_move": None
     }
 
     if len(parts) == 7:
         move["neutral_move"] = {
-            "from": (int(parts[3]), int(parts[4])),
-            "to": (int(parts[5]), int(parts[6]))
+            "from": (int(parts[3]) - 1, int(parts[4]) - 1),
+            "to": (int(parts[5]) - 1, int(parts[6]) - 1)
         }
 
     return move
