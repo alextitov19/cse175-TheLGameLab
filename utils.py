@@ -107,10 +107,11 @@ def validate_move(board, move, player):
 def get_l_positions(x, y, config):
     """
     Get the grid positions occupied by an L-piece based on its configuration.
+    The (x, y) coordinates represent the corner of the L (where the long and short pieces meet).
     
     Args:
-        x (int): X-coordinate of the L's pivot (corner).
-        y (int): Y-coordinate of the L's pivot (corner).
+        x (int): X-coordinate of the L's corner.
+        y (int): Y-coordinate of the L's corner.
         config (int): Configuration ID (0-7).
                       - 0-3: Rotated clockwise.
                       - 4-7: Mirrored orientations.
@@ -118,22 +119,22 @@ def get_l_positions(x, y, config):
     Returns:
         list[tuple]: List of grid positions occupied by the L-piece.
     """
-    if config == 0:  
-        return [(x, y), (x, y + 1), (x, y + 2), (x + 1, y + 2)]
-    elif config == 1:  
-        return [(x, y), (x, y + 1), (x, y + 2), (x - 1, y + 2)]
-    elif config == 2:  
-        return [(x, y), (x, y - 1), (x, y - 2), (x + 1, y - 2)]
-    elif config == 3: 
-        return [(x, y), (x, y - 1), (x, y - 2), (x - 1, y - 2)]
-    elif config == 4:  
-        return [(x, y), (x + 1, y), (x + 2, y), (x + 2, y - 1)]
-    elif config == 5:  
-        return [(x, y), (x + 1, y), (x + 2, y), (x + 2, y + 1)]
-    elif config == 6: 
-        return [(x, y), (x - 1, y), (x - 2, y), (x - 2, y - 1)]
-    elif config == 7:  
-        return [(x, y), (x - 1, y), (x - 2, y), (x - 2, y + 1)]
+    if config == 0:  # Vertical long, short to the right (corner at top-left)
+        return [(x, y), (x, y + 1), (x, y + 2), (x + 1, y)]
+    elif config == 1:  # Vertical long, short to the left
+        return [(x, y), (x, y + 1), (x, y + 2), (x - 1, y)]
+    elif config == 2:  # Vertical long, short to the right (corner at bottom-left)
+        return [(x, y), (x, y - 1), (x, y - 2), (x + 1, y)]
+    elif config == 3:  # Vertical long, short to the left
+        return [(x, y), (x, y - 1), (x, y - 2), (x - 1, y)]
+    elif config == 4:  # Horizontal long, short down
+        return [(x, y), (x + 1, y), (x + 2, y), (x, y + 1)]
+    elif config == 5:  # Horizontal long, short up
+        return [(x, y), (x + 1, y), (x + 2, y), (x, y - 1)]
+    elif config == 6:  # Horizontal long, short down (corner at right)
+        return [(x, y), (x - 1, y), (x - 2, y), (x, y + 1)]
+    elif config == 7:  # Horizontal long, short up
+        return [(x, y), (x - 1, y), (x - 2, y), (x, y - 1)]
     return []
 
 

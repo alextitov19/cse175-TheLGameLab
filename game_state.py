@@ -17,8 +17,8 @@ class GameState:
         self.neutral_positions = [(0, 0), (3, 3)]
 
         self.l_positions = {
-            1: {"x": 1, "y": 1, "config": 0},  # Player 1's L-piece
-            2: {"x": 2, "y": 2, "config": 3},  # Player 2's L-piece
+            1: {"x": 1, "y": 3, "config": 2},  # Player 1's L-piece
+            2: {"x": 2, "y": 0, "config": 1},  # Player 2's L-piece
         }
 
         # Place the pieces on the board
