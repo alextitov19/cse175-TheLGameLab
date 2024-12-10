@@ -17,8 +17,8 @@ class GameState:
         self.neutral_positions = [(0, 0), (3, 3)]
 
         self.l_positions = {
-            1: {"x": 1, "y": 3, "config": 2},  # Player 1's L-piece
-            2: {"x": 2, "y": 0, "config": 1},  # Player 2's L-piece
+            1: {"x": 1, "y": 3, "config": "E"},  # Player 1's L-piece
+            2: {"x": 2, "y": 0, "config": "W"},  # Player 2's L-piece
         }
 
         # Place the pieces on the board
@@ -41,6 +41,7 @@ class GameState:
         # Place L-pieces for both players dynamically from self.l_positions
         for player, l_data in self.l_positions.items():
             x, y, config = l_data["x"], l_data["y"], l_data["config"]
+            print(f"Player {player} L-piece: x={x}, y={y}, config={config}")
             for px, py in get_l_positions(x, y, config):
                 self.board[py][px] = player
 
@@ -71,7 +72,7 @@ class GameState:
         # Iterate over all possible L-piece configurations
         for x in range(4):
             for y in range(4):
-                for config in range(8):  # Use 0-7 for L-piece configurations
+                for config in ["N", "E", "S", "W"]:  # Use 0-7 for L-piece configurations
                     l_positions = get_l_positions(x, y, config)
                     
                     # Check if the L-piece move is valid

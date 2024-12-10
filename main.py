@@ -1,5 +1,5 @@
 from game_state import GameState
-from utils import parse_move_input, validate_move, print_board, draw_all_l_configurations
+from utils import parse_move_input, validate_move, print_board
 from minimax import alpha_beta_pruning
 from heuristic import evaluate_board
 import math
@@ -13,7 +13,7 @@ def human_move(game_state):
     print_board(game_state.board)
     while True:
         try:
-            draw_all_l_configurations()
+
             move_input = input("Enter your move (e.g., '1 2 E 4 3 1 1'): ")
             move = parse_move_input(move_input)
             if validate_move(game_state.board, move, game_state.current_player):
