@@ -194,7 +194,7 @@ def draw_all_l_configurations():
     """
     print("\nAll L-piece Configurations (0-7):\n")
 
-    configs = [[0, 0, 0], [1, 0, 1], [0, 2, 2], [1, 2, 3], [0, 1, 4], [0, 0, 5], [2, 1, 6], [2, 0, 7]]
+    configs = [[0, 0, 0], [1, 0, 1], [0, 2, 2], [1, 2, 3], [0, 1, 4], [0, 1, 5], [2, 1, 6], [2, 1, 7]]
 
     # Initialize the boards for all 8 configurations
     boards = []
