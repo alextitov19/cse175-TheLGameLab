@@ -1,5 +1,5 @@
 from game_state import GameState
-from utils import parse_move_input, validate_move, print_board, draw_all_l_configurations
+from utils import parse_move_input, validate_move, print_board, draw_all_l_configurations, ntol
 from minimax import alpha_beta_pruning
 from heuristic import evaluate_board
 import math
@@ -21,7 +21,7 @@ def human_move(game_state):
             else:
                 print("Invalid move. Please try again.")
         except ValueError as e:
-            print(f"Error: {e}. Try again.")
+            print(f"Error: {e} Try again.")
 
 
 def computer_move(game_state, depth=5):
@@ -45,7 +45,7 @@ def computer_move(game_state, depth=5):
         "L_piece": {
             "x": move["L_piece"]["x"] + 1,
             "y": move["L_piece"]["y"] + 1,
-            "config": move["L_piece"]["config"],  # Configuration remains unchanged
+            "config": ntol(move["L_piece"]["config"]),  # Configuration remains unchanged
         },
         "neutral_move": None if move["neutral_move"] is None else {
             "from": (move["neutral_move"]["from"][0] + 1, move["neutral_move"]["from"][1] + 1),
