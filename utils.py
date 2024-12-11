@@ -14,6 +14,9 @@ def parse_move_input(input_string):
     parts = input_string.split()
     if len(parts) < 3 or len(parts) not in {3, 7}:
         raise ValueError("Invalid move format. Expected 3 or 7 parts.")
+    
+
+    #TODO: If config = letter, convert to number by checking which one of the two numbers is valid move
 
     move = {
         "L_piece": {
