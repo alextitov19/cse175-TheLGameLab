@@ -24,7 +24,7 @@ def human_move(game_state):
             print(f"Error: {e}. Try again.")
 
 
-def computer_move(game_state, depth=3):
+def computer_move(game_state, depth=5):
     """
     Determine the computer's move using minimax with alpha-beta pruning.
     """
@@ -54,8 +54,8 @@ def computer_move(game_state, depth=3):
     }
 
     print(f"Computer's Move: {adjusted_move}")
+    input("Press any key to continue...")  # Wait for key input
     return move
-
 def main():
     """
     Main function to run the L-game.
