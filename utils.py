@@ -14,12 +14,20 @@ def parse_move_input(input_string):
     parts = input_string.split()
     if len(parts) < 3 or len(parts) not in {3, 7}:
         raise ValueError("Invalid move format. Expected 3 or 7 parts.")
+    
+    if parts[2].upper() not in {"E", "W", "N", "S"}:
+        raise ValueError("Invalid L-piece orientation. Expected 'E', 'W', 'N', or 'S'.")
+    
+
+    #TODO: If config = letter, convert to number by checking which one of the two numbers is valid move
+    num = lton(int(parts[0]) - 1, int(parts[1]) - 1, parts[2].upper())
+    print("Num:", num)
 
     move = {
         "L_piece": {
             "x": int(parts[0]) - 1,
             "y": int(parts[1]) - 1,
-            "config": int(parts[2])  # Configuration ID remains unchanged
+            "config": num  # Configuration ID remains unchanged
         },
         "neutral_move": None
     }
@@ -136,6 +144,61 @@ def get_l_positions(x, y, config):
     elif config == 7:  # Horizontal long, short up
         return [(x, y), (x - 1, y), (x - 2, y), (x, y - 1)]
     return []
+
+def lton(x, y, letter):
+    """
+    Get the grid positions occupied by an L-piece based on its configuration.
+    The (x, y) coordinates represent the corner of the L (where the long and short pieces meet).
+    
+    Args:
+        x (int): X-coordinate of the L's corner.
+        y (int): Y-coordinate of the L's corner.
+        config (int): Configuration ID (0-7).
+                      - 0-3: Rotated clockwise.
+                      - 4-7: Mirrored orientations.
+    
+    Returns:
+        list[tuple]: List of grid positions occupied by the L-piece.
+    """
+    configs = {}
+    if letter == "E":
+        configs = {
+            0: [(x, y), (x, y + 1), (x, y + 2), (x + 1, y)],
+            2: [(x, y), (x, y - 1), (x, y - 2), (x + 1, y)]
+        }
+    elif letter == "W":
+        configs = {
+            1: [(x, y), (x, y + 1), (x, y + 2), (x - 1, y)],
+            3: [(x, y), (x, y - 1), (x, y - 2), (x - 1, y)]
+        }
+    elif letter == "N":
+        configs = {
+            5: [(x, y), (x + 1, y), (x + 2, y), (x, y - 1)],
+            7: [(x, y), (x - 1, y), (x - 2, y), (x, y - 1)]
+        }
+    elif letter == "S":
+        configs = {
+            4: [(x, y), (x + 1, y), (x + 2, y), (x, y + 1)],
+            6: [(x, y), (x - 1, y), (x - 2, y), (x, y + 1)]
+        }
+    
+    for index, config in configs.items():
+        if all(is_within_bounds(px, py) for px, py in config):
+            return index
+
+    return None
+
+def ntol(num):
+    if num == 0 or num == 2:
+        return "E"
+    if num == 1 or num == 3:
+        return "W"
+    if num == 5 or num == 7:
+        return "N"
+    if num == 4 or num == 6:
+        return "S"
+    return "Invalid"
+
 
 
 def apply_l_piece_move(board, x, y, config, player):

@@ -63,10 +63,7 @@ class GameState:
         Returns:
             list[dict]: A list of legal moves, each containing the L-piece move and optionally a neutral piece move.
         """
-        legal_moves = []
-
-        # Get the current L-piece position and neutral piece positions
-        l_data = self.l_positions[player]
+        legal_moves = set()  # Use a set to store unique moves as tuples
 
         # Iterate over all possible L-piece configurations
         for x in range(4):
@@ -75,29 +72,52 @@ class GameState:
                     l_positions = get_l_positions(x, y, config)
                     
                     # Check if the L-piece move is valid
-                    if all(
-                        is_within_bounds(px, py)
-                        and is_position_free(self.board, px, py, player)
+                    if not all(
+                        is_within_bounds(px, py) and is_position_free(self.board, px, py, player)
                         for px, py in l_positions
                     ):
-                        move = {"L_piece": {"x": x, "y": y, "config": config}, "neutral_move": None}
+                        continue  # Skip invalid L-piece moves
 
-                        # Add all possible neutral piece moves
-                        for idx, (nx, ny) in enumerate(self.neutral_positions):
-                            for tx in range(4):
-                                for ty in range(4):
-                                    if is_within_bounds(tx, ty) and is_position_free(self.board, tx, ty, player):
-                                        neutral_move = {"from": (nx, ny), "to": (tx, ty)}
-                                        move_with_neutral = move.copy()
-                                        move_with_neutral["neutral_move"] = neutral_move
-                                        if validate_move(self.board, move_with_neutral, player):
-                                            legal_moves.append(move_with_neutral)
+                    # Create the L-piece move
+                    base_move = {"L_piece": {"x": x, "y": y, "config": config}, "neutral_move": None}
 
-                        # Add the L-piece move without a neutral piece move
-                        if validate_move(self.board, move, player):
-                            legal_moves.append(move)
+                    # Validate the L-piece move without neutral moves
+                    if not validate_move(self.board, base_move, player):
+                        continue  # Skip if the base move is invalid
 
-        return legal_moves
+                    # Add the L-piece move without a neutral piece move (as a tuple)
+                    legal_moves.add((
+                        frozenset(base_move["L_piece"].items()),
+                        frozenset(base_move["neutral_move"].items()) if base_move["neutral_move"] else None,
+                    ))
+
+                    # Add possible neutral piece moves
+                    for nx, ny in self.neutral_positions:
+                        for tx in range(4):
+                            for ty in range(4):
+                                # Skip invalid neutral piece moves
+                                if not (is_within_bounds(tx, ty) and is_position_free(self.board, tx, ty, player)):
+                                    continue
+                                if (tx, ty) in l_positions:
+                                    continue  # Neutral piece cannot overlap with the new L-piece positions
+
+                                # Create the move with the neutral piece
+                                neutral_move = {"from": (nx, ny), "to": (tx, ty)}
+                                move_with_neutral = base_move.copy()
+                                move_with_neutral["neutral_move"] = neutral_move
+
+                                # Validate the full move (L-piece + neutral move)
+                                if validate_move(self.board, move_with_neutral, player):
+                                    legal_moves.add((
+                                        frozenset(move_with_neutral["L_piece"].items()),
+                                        frozenset(move_with_neutral["neutral_move"].items()),
+                                    ))
+
+        # Convert the set of moves back to a list of dictionaries
+        return [
+            {"L_piece": dict(l_piece), "neutral_move": dict(neutral_move) if neutral_move else None}
+            for l_piece, neutral_move in legal_moves
+        ]
 
     def apply_move(self, move):
         """
