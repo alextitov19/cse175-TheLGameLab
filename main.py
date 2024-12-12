@@ -88,7 +88,7 @@ def main():
     # Draw the initial board before the game loop starts
     visualizer.draw_board()
 
-    while not game_state.is_terminal():
+    while not game_state.is_terminal(check_ties=True):
         print(f"\nPlayer {game_state.current_player}'s turn.")
 
         if (mode == "1") or (mode == "2" and game_state.current_player == x):
