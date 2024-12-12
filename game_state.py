@@ -146,11 +146,11 @@ class GameState:
         self.total_turns += 1
 
         # Extract L-piece move data
-        print("Move: ", move)
+        # print("Move: ", move)
         l_data = move["L_piece"]
-        print("L_data: ", l_data)
+        # print("L_data: ", l_data)
         x, y, config = l_data["x"], l_data["y"], l_data["config"]
-        print("X, Y, Config: ", x, y, config)
+        # print("X, Y, Config: ", x, y, config)
         l_positions = get_l_positions(x, y, config)
 
         # Clear the current L-piece positions for the current player
@@ -167,7 +167,7 @@ class GameState:
 
         # Place the L-piece at the new positions
         for px, py in l_positions:
-            print("Position: ", px, py)
+            # print("Position: ", px, py)
             self.board[py][px] = self.current_player  # Place the player's L-piece
 
         # Place the neutral piece in its new position, if applicable
