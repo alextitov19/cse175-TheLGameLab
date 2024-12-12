@@ -54,8 +54,9 @@ def computer_move(game_state, depth=5):
     }
 
     print(f"Computer's Move: {adjusted_move}")
-    input("Press any key to continue...")  # Wait for key input
+    # input("Press any key to continue...")  # Wait for key input
     return move
+
 def main():
     """
     Main function to run the L-game.
@@ -79,10 +80,8 @@ def main():
         elif s != "y":
             print("Invalid input. Exiting.")
             return
-            
 
     game_state = GameState()
-
     visualizer = GameVisualizer(game_state.board)
 
     # Draw the initial board before the game loop starts
@@ -110,9 +109,17 @@ def main():
     # Final game over logic
     print("\nFinal Board State:")
     print_board(game_state.board)
-    print(f"Game Over! Player {3 - game_state.current_player} wins!")
+
+    # Check tie conditions
+    board_hash = game_state._hash_board()
+    if game_state.state_history.get(board_hash, 0) >= game_state.max_repetitions:
+        print("Game Over! It's a tie due to repeated states.")
+    elif game_state.total_turns >= game_state.max_turns:
+        print("Game Over! It's a tie due to exceeding the maximum number of turns.")
+    else:
+        print(f"Game Over! Player {3 - game_state.current_player} wins!")
+
     visualizer.run()  # Keeps the GUI window open at the end of the game
-    
 def debug_apply_move(state, move):
     """
     Debug wrapper for applying moves to a game state.
