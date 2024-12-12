@@ -20,84 +20,115 @@ class SymmetryManager:
         return set(rotations + reflections)
 
 
-def minimax(state, depth, maximizing_player, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states=None):
+def minimax(state, depth, maximizing_player, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states=None, track_repeats=True):
     """
-    Implements the Minimax algorithm with symmetry pruning.
+    Implements the Minimax algorithm with symmetry pruning and tie detection.
+
+    Args:
+        state: Current game state.
+        depth: Depth to search.
+        maximizing_player: Whether this is the maximizing player's turn.
+        evaluate_fn: Function to evaluate board states.
+        get_legal_moves_fn: Function to generate legal moves.
+        apply_move_fn: Function to apply a move and return the new state.
+        is_terminal_fn: Function to check if the game is over.
+        visited_states: A set of visited states for tie detection.
+        track_repeats: Whether to track repeated states as ties.
     """
     if visited_states is None:
         visited_states = set()
 
     # Convert state to a hashable format and check for symmetry
+    board_hash = tuple(tuple(row) for row in state.board)
     symmetries = SymmetryManager.generate_all_symmetries(state.board)
-    if any(symmetry in visited_states for symmetry in symmetries):
-        return None, 0  # Skip symmetrical states
+    
+    if track_repeats and any(symmetry in visited_states for symmetry in symmetries):
+        print("Detected repeated state in minimax. Declaring tie.")
+        return None, 0  # Treat repeated states as ties
+
     visited_states.update(symmetries)
 
     if depth == 0 or is_terminal_fn(state):
-        return None, evaluate_fn(state, state.current_player)  # Pass the player explicitly
+        return None, evaluate_fn(state, state.current_player)
 
+    best_move = None
     if maximizing_player:
         best_score = -math.inf
-        best_move = None
-        for move in get_legal_moves_fn(state, maximizing_player):
+        for move in get_legal_moves_fn(state):
             new_state = apply_move_fn(state, move)
-            _, score = minimax(new_state, depth - 1, False, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states)
+            _, score = minimax(new_state, depth - 1, False, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states, track_repeats)
             if score > best_score:
                 best_score = score
                 best_move = move
         return best_move, best_score
     else:
         best_score = math.inf
-        best_move = None
-        for move in get_legal_moves_fn(state, maximizing_player):
+        for move in get_legal_moves_fn(state):
             new_state = apply_move_fn(state, move)
-            _, score = minimax(new_state, depth - 1, True, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states)
+            _, score = minimax(new_state, depth - 1, True, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states, track_repeats)
             if score < best_score:
                 best_score = score
                 best_move = move
         return best_move, best_score
 
 
-def alpha_beta_pruning(state, depth, alpha, beta, maximizing_player, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states=None):
+def alpha_beta_pruning(state, depth, alpha, beta, maximizing_player, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states=None, track_repeats=True):
     """
-    Perform minimax with alpha-beta pruning and symmetry checks.
+    Perform minimax with alpha-beta pruning and tie detection.
+
+    Args:
+        state: Current game state.
+        depth: Depth to search.
+        alpha: Alpha value for pruning.
+        beta: Beta value for pruning.
+        maximizing_player: Whether this is the maximizing player's turn.
+        evaluate_fn: Function to evaluate board states.
+        get_legal_moves_fn: Function to generate legal moves.
+        apply_move_fn: Function to apply a move and return the new state.
+        is_terminal_fn: Function to check if the game is over.
+        visited_states: A set of visited states for tie detection.
+        track_repeats: Whether to track repeated states as ties.
     """
     if visited_states is None:
         visited_states = set()
 
     # Convert state to a hashable format and check for symmetry
+    board_hash = tuple(tuple(row) for row in state.board)
     symmetries = SymmetryManager.generate_all_symmetries(state.board)
-    if any(symmetry in visited_states for symmetry in symmetries):
-        return None, 0  # Skip symmetrical states
+
+    if track_repeats and any(symmetry in visited_states for symmetry in symmetries):
+        print("Detected repeated state in alpha-beta pruning. Declaring tie.")
+        return None, 0  # Treat repeated states as ties
+
     visited_states.update(symmetries)
 
     if depth == 0 or is_terminal_fn(state):
-        return None, evaluate_fn(state, state.current_player)  # Pass the player explicitly
+        return None, evaluate_fn(state, state.current_player)
 
     best_move = None
     if maximizing_player:
         max_eval = -math.inf
         for move in get_legal_moves_fn(state):
             new_state = apply_move_fn(state, move)
-            _, eval = alpha_beta_pruning(new_state, depth - 1, alpha, beta, False, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states)
+            _, eval = alpha_beta_pruning(new_state, depth - 1, alpha, beta, False, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states, track_repeats)
             if eval > max_eval:
                 max_eval = eval
                 best_move = move
             alpha = max(alpha, eval)
             if beta <= alpha:
-                break  # Prune
+                break
         return best_move, max_eval
     else:
         min_eval = math.inf
         for move in get_legal_moves_fn(state):
             new_state = apply_move_fn(state, move)
-            _, eval = alpha_beta_pruning(new_state, depth - 1, alpha, beta, True, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states)
+            _, eval = alpha_beta_pruning(new_state, depth - 1, alpha, beta, True, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states, track_repeats)
             if eval < min_eval:
                 min_eval = eval
                 best_move = move
             beta = min(beta, eval)
             if beta <= alpha:
-                break  # Prune
+                break
         return best_move, min_eval
 
 
