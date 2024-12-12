@@ -1,39 +1,58 @@
+import math
+from utils import get_l_positions
+
+
 def evaluate_board(state, player):
     """
-    Heuristic evaluation function for the L-game.
-    Scores the board state based on factors like mobility and control.
-    
+    Enhanced heuristic evaluation function for the L-game.
+    Scores the board state based on factors like mobility, neutral piece control, and strategic positioning.
+
     Args:
         state (GameState): The current game state.
         player (int): The player for whom to evaluate the board (1 or 2).
-    
+
     Returns:
         int: A score representing the desirability of the state for the player.
     """
     opponent = 3 - player
 
-    # Number of legal moves for the player
+    # Cache legal moves to avoid redundant computations
     player_moves = len(state.get_legal_moves(player))
-
-    # Number of legal moves for the opponent
     opponent_moves = len(state.get_legal_moves(opponent))
 
-    # Control of the neutral pieces (e.g., closer neutral pieces give advantage)
-    print("L positions", state.l_positions[player])
+    # Check for terminal states early
+    if player_moves == 0:
+        return -math.inf  # Current player has no moves, losing state
+    if opponent_moves == 0:
+        return math.inf  # Opponent has no moves, winning state
+
+    # Neutral piece control (Manhattan distance from player's L-piece)
     neutral_control = distance_to_l(state.neutral_positions, state.l_positions[player])
-    
+
+    # Opponent blockade: Penalize states where the opponent's mobility is restricted
+    opponent_blockade = max(0, 3 - opponent_moves)  # Strong penalty if opponent has <3 moves
+
+    # Positioning: Reward central positions and penalize edges
+    central_positions = {(1, 1), (1, 2), (2, 1), (2, 2)}
+    l_positions = get_l_positions(
+        state.l_positions[player]['x'],
+        state.l_positions[player]['y'],
+        state.l_positions[player]['config']
+    )
+    central_score = sum(1 for x, y in l_positions if (x, y) in central_positions)
+    edge_penalty = sum(1 for x, y in l_positions if x in {0, 3} or y in {0, 3})
 
     # Combine factors into a weighted score
-    # Favor states with more moves for the player and fewer moves for the opponent
     score = (
-        10 * player_moves  # Mobility
-        - 10 * opponent_moves  # Limit opponent's mobility
-        + 5 * neutral_control  # Control of neutral pieces
+        15 * player_moves             # Strong weight for mobility
+        - 12 * opponent_moves          # Limit opponent's mobility
+        - 5 * neutral_control          # Encourage neutral piece control
+        + 20 * opponent_blockade       # Strongly reward blocking the opponent
+        + 4 * central_score            # Reward central positioning
+        - 3 * edge_penalty             # Penalize edge positions
     )
 
     return score
-
-from utils import get_l_positions  # Ensure this is imported
 
 def distance_to_l(neutral_positions, l_data):
     """
@@ -56,10 +75,10 @@ def distance_to_l(neutral_positions, l_data):
         raise ValueError(f"Invalid l_data format: {l_data}")
 
     total_distance = 0
+
+    # Calculate distances from each neutral piece to the nearest L-piece segment
     for nx, ny in neutral_positions:
-        min_distance = float("inf")
-        for lx, ly in l_positions:
-            distance = abs(nx - lx) + abs(ny - ly)  # Manhattan distance
-            min_distance = min(min_distance, distance)
+        min_distance = min(abs(nx - lx) + abs(ny - ly) for lx, ly in l_positions)  # Manhattan distance
         total_distance += min_distance
+
     return total_distance

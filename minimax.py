@@ -19,7 +19,6 @@ class SymmetryManager:
         reflections = [tuple(tuple(reversed(row)) for row in rotation) for rotation in rotations]
         return set(rotations + reflections)
 
-
 def minimax(state, depth, maximizing_player, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states=None, track_repeats=True):
     """
     Implements the Minimax algorithm with symmetry pruning and tie detection.
@@ -34,17 +33,20 @@ def minimax(state, depth, maximizing_player, evaluate_fn, get_legal_moves_fn, ap
         is_terminal_fn: Function to check if the game is over.
         visited_states: A set of visited states for tie detection.
         track_repeats: Whether to track repeated states as ties.
+
+    Returns:
+        best_move: The best move determined by the search.
+        best_score: The score associated with the best move.
     """
     if visited_states is None:
         visited_states = set()
 
-    # Convert state to a hashable format and check for symmetry
+    # Detect repeated states
     board_hash = tuple(tuple(row) for row in state.board)
     symmetries = SymmetryManager.generate_all_symmetries(state.board)
-    
+
     if track_repeats and any(symmetry in visited_states for symmetry in symmetries):
-        print("Detected repeated state in minimax. Declaring tie.")
-        return None, 0  # Treat repeated states as ties
+        return None, -1000  # Penalize repeated states
 
     visited_states.update(symmetries)
 
@@ -88,17 +90,20 @@ def alpha_beta_pruning(state, depth, alpha, beta, maximizing_player, evaluate_fn
         is_terminal_fn: Function to check if the game is over.
         visited_states: A set of visited states for tie detection.
         track_repeats: Whether to track repeated states as ties.
+
+    Returns:
+        best_move: The best move determined by the search.
+        best_score: The score associated with the best move.
     """
     if visited_states is None:
         visited_states = set()
 
-    # Convert state to a hashable format and check for symmetry
+    # Detect repeated states
     board_hash = tuple(tuple(row) for row in state.board)
     symmetries = SymmetryManager.generate_all_symmetries(state.board)
 
     if track_repeats and any(symmetry in visited_states for symmetry in symmetries):
-        print("Detected repeated state in alpha-beta pruning. Declaring tie.")
-        return None, 0  # Treat repeated states as ties
+        return None, -1000  # Penalize repeated states
 
     visited_states.update(symmetries)
 
@@ -116,7 +121,7 @@ def alpha_beta_pruning(state, depth, alpha, beta, maximizing_player, evaluate_fn
                 best_move = move
             alpha = max(alpha, eval)
             if beta <= alpha:
-                break
+                break  # Prune remaining branches
         return best_move, max_eval
     else:
         min_eval = math.inf
@@ -128,30 +133,5 @@ def alpha_beta_pruning(state, depth, alpha, beta, maximizing_player, evaluate_fn
                 best_move = move
             beta = min(beta, eval)
             if beta <= alpha:
-                break
+                break  # Prune remaining branches
         return best_move, min_eval
-
-
-def evaluate_fn(state, player):
-    """
-    A heuristic evaluation function for the game state.
-    """
-    current_player_moves = len(state.get_legal_moves(player))
-    opponent_moves = len(state.get_legal_moves(3 - player))
-    return current_player_moves - opponent_moves
-
-
-def is_terminal_fn(state):
-    """
-    Checks if the game state is terminal.
-    """
-    return not state.get_legal_moves(state.current_player)
-
-
-def apply_move_fn(state, move):
-    """
-    Apply a move to the game state and return the new state.
-    """
-    new_state = state.copy()
-    new_state.apply_move(move)
-    return new_state
