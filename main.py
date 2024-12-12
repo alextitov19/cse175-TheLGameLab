@@ -91,7 +91,12 @@ def main():
         if (mode == "1") or (mode == "2" and game_state.current_player == x):
             # Human move
             move = human_move(game_state)
+            print("\nCurrent Board State:")
+            print_board(game_state.board)
             game_state.apply_move(move)
+            print("\nUpdated Board State:")
+            print_board(game_state.board)
+        
 
             # Update GUI immediately after the human move
             visualizer.update_board(game_state.board)
@@ -118,6 +123,7 @@ def main():
         print(f"Game Over! Player {3 - game_state.current_player} wins!")
 
     visualizer.run()  # Keeps the GUI window open at the end of the game
+    
 def debug_apply_move(state, move):
     """
     Debug wrapper for applying moves to a game state.

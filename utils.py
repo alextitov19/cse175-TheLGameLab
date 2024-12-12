@@ -60,11 +60,14 @@ def is_position_free(board, x, y, player):
 
 
 def validate_move(board, move, player):
+    if (move["L_piece"]["config"] == None):
+        return False
     """
     Validate a move to ensure it adheres to the game's rules.
     Args:
         board (list[list[int]]): The current game board.
         move (dict): The parsed move dictionary.
+        player (int): The player making the move (1 or 2).
     Returns:
         bool: True if the move is valid, False otherwise.
     """
@@ -72,9 +75,8 @@ def validate_move(board, move, player):
     l_piece = move["L_piece"]
     x, y, config = l_piece["x"], l_piece["y"], l_piece["config"]
     l_positions = get_l_positions(x, y, config)
-    # print("L Positions:", l_positions)
 
-    #  Get the current L-piece positions on the board
+    # Get the current L-piece positions on the board
     current_l_positions = []
     for row in range(4):
         for col in range(4):
@@ -83,30 +85,36 @@ def validate_move(board, move, player):
 
     # Ensure the L-piece is moved to a different position
     if set(l_positions) == set(current_l_positions):
-        # print("L-piece was not moved")
+        # The L-piece was not moved
         return False
 
+    # Ensure all positions for the new L-piece are within bounds and free
     if not all(is_within_bounds(px, py) for px, py in l_positions):
-        print("Not within bounds")
-    if not all(is_position_free(board, px, py, player) for px, py in l_positions):
-        print("Not free")
-
-    # Ensure all positions are within bounds and free
-    if not all(is_within_bounds(px, py) and is_position_free(board, px, py, player) for px, py in l_positions):
         return False
 
-    # Validate neutral piece move, if applicable
+    # Temporarily "remove" the neutral piece being moved
     neutral_move = move["neutral_move"]
+    temp_board = [row[:] for row in board]
     if neutral_move:
         fx, fy = neutral_move["from"]
         tx, ty = neutral_move["to"]
-        if not (is_within_bounds(tx, ty) and is_position_free(board, tx, ty, 0)):
+        if not is_within_bounds(tx, ty):
             return False
-         # Ensure the neutral piece is not moved to a position occupied by the new L-piece
+        if temp_board[fy][fx] == "N":  # Neutral piece at the source position
+            temp_board[fy][fx] = 0  # Temporarily clear the source position
+        else:
+            return False
         if (tx, ty) in l_positions:
-            print("Neutral piece overlaps with L-piece")
+            # Ensure the neutral piece is not moved to a position occupied by the new L-piece
             return False
-        if board[fy][fx] != "N":
+
+    # Check if all L-piece positions are free on the updated board
+    if not all(is_position_free(temp_board, px, py, player) for px, py in l_positions):
+        return False
+
+    # Validate the neutral piece destination
+    if neutral_move:
+        if temp_board[neutral_move["to"][1]][neutral_move["to"][0]] != 0:
             return False
 
     return True
@@ -146,6 +154,7 @@ def get_l_positions(x, y, config):
     return []
 
 def lton(x, y, letter):
+    print("Letter:", letter)
     """
     Get the grid positions occupied by an L-piece based on its configuration.
     The (x, y) coordinates represent the corner of the L (where the long and short pieces meet).

@@ -146,27 +146,34 @@ class GameState:
         self.total_turns += 1
 
         # Extract L-piece move data
+        print("Move: ", move)
         l_data = move["L_piece"]
+        print("L_data: ", l_data)
         x, y, config = l_data["x"], l_data["y"], l_data["config"]
+        print("X, Y, Config: ", x, y, config)
         l_positions = get_l_positions(x, y, config)
 
-        # Clear the current L-piece positions for the player
+        # Clear the current L-piece positions for the current player
         for row in range(4):
             for col in range(4):
                 if self.board[row][col] == self.current_player:
-                    self.board[row][col] = 0
+                    self.board[row][col] = 0  # Clear the player's L-piece from the board
+
+        # Apply the neutral piece move, if applicable
+        if move.get("neutral_move"):
+            fx, fy = move["neutral_move"]["from"]
+            if self.board[fy][fx] == "N":  # Ensure the source position is a neutral piece
+                self.board[fy][fx] = 0  # Clear the neutral piece's source position
 
         # Place the L-piece at the new positions
         for px, py in l_positions:
-            self.board[py][px] = self.current_player
+            print("Position: ", px, py)
+            self.board[py][px] = self.current_player  # Place the player's L-piece
 
-        # Apply the neutral piece move
+        # Place the neutral piece in its new position, if applicable
         if move.get("neutral_move"):
-            fx, fy = move["neutral_move"]["from"]
             tx, ty = move["neutral_move"]["to"]
-
-            self.board[fy][fx] = 0
-            self.board[ty][tx] = "N"
+            self.board[ty][tx] = "N"  # Place the neutral piece in the new position
 
         # Update the current player
         self.current_player = 3 - self.current_player
