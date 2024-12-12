@@ -1,9 +1,5 @@
-import math # Minimax.py imports math
-
-import tkinter as tk # Visualizer.py imports tkinter
-
-#--------------------------------Game State--------------------------------
-
+import math
+#--------------------------------------- Game State ---------------------------------------
 class GameState:
     def __init__(self):
         """
@@ -19,10 +15,9 @@ class GameState:
 
         # Initial positions of L pieces and neutral pieces
         self.neutral_positions = [(0, 0), (3, 3)]
-
         self.l_positions = {
-            1: {"x": 1, "y": 1, "config": 0},  # Player 1's L-piece
-            2: {"x": 2, "y": 2, "config": 3},  # Player 2's L-piece
+            1: {"x": 1, "y": 3, "config": 2},  # Player 1's L-piece
+            2: {"x": 2, "y": 0, "config": 1},  # Player 2's L-piece
         }
 
         # Place the pieces on the board
@@ -31,11 +26,18 @@ class GameState:
         # Player 1 starts the game
         self.current_player = 1
 
+        # Track board state history to detect repeated states
+        self.state_history = {}
+        self.total_turns = 0  # Track total turns
+
+        # Limits for repetitions and total turns
+        self.max_repetitions = 3
+        self.max_turns = 100
+
     def _initialize_board(self):
         """
         Place the initial L pieces and neutral pieces on the board.
         """
-        # Initialize board
         self.board = [[0 for _ in range(4)] for _ in range(4)]
 
         # Place neutral pieces
@@ -48,147 +50,208 @@ class GameState:
             for px, py in get_l_positions(x, y, config):
                 self.board[py][px] = player
 
-    def copy(self):
+    def _hash_board(self):
         """
-        Create a deep copy of the game state.
+        Generate a hashable representation of the board for tracking repeated states.
         """
-        new_state = GameState()
-        new_state.board = [row[:] for row in self.board]  # Deep copy the board
-        new_state.l_positions = self.l_positions.copy()  # Copy player positions
-        new_state.neutral_positions = self.neutral_positions.copy()  # Copy neutral pieces
-        new_state.current_player = self.current_player
-        return new_state
+        return tuple(tuple(row) for row in self.board)
+
+    def is_terminal(self, check_ties=False):
+        """
+        Check if the current game state is terminal (no legal moves for the current player or a tie).
+        Args:
+            check_ties (bool): Whether to check for repeated states and ties.
+        """
+        if check_ties:
+            # Check for repeated states (tie condition)
+            board_hash = self._hash_board()
+            if board_hash in self.state_history:
+                self.state_history[board_hash] += 1
+                if self.state_history[board_hash] >= self.max_repetitions:
+                    print("The same board configuration has occurred three times. Declaring a tie.")
+                    return True
+            else:
+                self.state_history[board_hash] = 1
+
+            # Check for maximum turns
+            if self.total_turns >= self.max_turns:
+                print(f"Game has reached the maximum turn limit of {self.max_turns}. Declaring a tie.")
+                return True
+
+        # Check if the current player has no legal moves
+        return len(self.get_legal_moves(self.current_player)) == 0
 
     def get_legal_moves(self, player):
         """
         Get all legal moves for the given player, combining L-piece and neutral piece moves.
+
         Args:
             player (int): The player (1 or 2) whose legal moves are to be generated.
+
         Returns:
             list[dict]: A list of legal moves, each containing the L-piece move and optionally a neutral piece move.
         """
         legal_moves = []
-
-        # Get the current L-piece position and neutral piece positions
-        l_data = self.l_positions[player]
 
         # Iterate over all possible L-piece configurations
         for x in range(4):
             for y in range(4):
                 for config in range(8):  # Use 0-7 for L-piece configurations
                     l_positions = get_l_positions(x, y, config)
-                    
-                    # Check if the L-piece move is valid
-                    if all(
-                        is_within_bounds(px, py)
-                        and is_position_free(self.board, px, py, player)
+
+                    # Validate L-piece positions early
+                    if not all(
+                        is_within_bounds(px, py) and is_position_free(self.board, px, py, player)
                         for px, py in l_positions
                     ):
-                        move = {"L_piece": {"x": x, "y": y, "config": config}, "neutral_move": None}
+                        continue
 
-                        # Add all possible neutral piece moves
-                        for idx, (nx, ny) in enumerate(self.neutral_positions):
-                            for tx in range(4):
-                                for ty in range(4):
-                                    if is_within_bounds(tx, ty) and is_position_free(self.board, tx, ty, player):
-                                        neutral_move = {"from": (nx, ny), "to": (tx, ty)}
-                                        move_with_neutral = move.copy()
-                                        move_with_neutral["neutral_move"] = neutral_move
-                                        if validate_move(self.board, move_with_neutral, player):
-                                            legal_moves.append(move_with_neutral)
+                    # Create the base L-piece move
+                    base_move = {"L_piece": {"x": x, "y": y, "config": config}, "neutral_move": None}
 
-                        # Add the L-piece move without a neutral piece move
-                        if validate_move(self.board, move, player):
-                            legal_moves.append(move)
+                    # Validate the base L-piece move
+                    if not validate_move(self.board, base_move, player):
+                        continue
+
+                    # Add the L-piece move without neutral piece adjustment
+                    legal_moves.append(base_move)
+
+                    # Iterate over neutral piece moves
+                    for nx, ny in self.neutral_positions:
+                        for tx in range(4):
+                            for ty in range(4):
+                                # Skip invalid neutral piece moves
+                                if not is_within_bounds(tx, ty) or not is_position_free(self.board, tx, ty, player):
+                                    continue
+                                if (tx, ty) in l_positions:
+                                    continue  # Neutral piece cannot overlap with the new L-piece positions
+
+                                # Add the neutral piece move
+                                neutral_move = {"from": (nx, ny), "to": (tx, ty)}
+                                move_with_neutral = base_move.copy()
+                                move_with_neutral["neutral_move"] = neutral_move
+
+                                if validate_move(self.board, move_with_neutral, player):
+                                    legal_moves.append(move_with_neutral)
 
         return legal_moves
 
     def apply_move(self, move):
         """
         Apply a move to the game state.
+        Args:
+            move (dict): The move to be applied, containing L-piece and optional neutral piece moves.
         """
+        # Increment turn counter
+        self.total_turns += 1
+
         # Extract L-piece move data
+        # print("Move: ", move)
         l_data = move["L_piece"]
+        # print("L_data: ", l_data)
         x, y, config = l_data["x"], l_data["y"], l_data["config"]
+        # print("X, Y, Config: ", x, y, config)
         l_positions = get_l_positions(x, y, config)
 
-        # Clear the current L-piece positions for the player
+        # Clear the current L-piece positions for the current player
         for row in range(4):
             for col in range(4):
                 if self.board[row][col] == self.current_player:
-                    self.board[row][col] = 0
+                    self.board[row][col] = 0  # Clear the player's L-piece from the board
+
+        # Apply the neutral piece move, if applicable
+        if move.get("neutral_move"):
+            fx, fy = move["neutral_move"]["from"]
+            if self.board[fy][fx] == "N":  # Ensure the source position is a neutral piece
+                self.board[fy][fx] = 0  # Clear the neutral piece's source position
 
         # Place the L-piece at the new positions
         for px, py in l_positions:
-            self.board[py][px] = self.current_player
+            # print("Position: ", px, py)
+            self.board[py][px] = self.current_player  # Place the player's L-piece
 
-        # Apply the neutral piece move
+        # Place the neutral piece in its new position, if applicable
         if move.get("neutral_move"):
-            fx, fy = move["neutral_move"]["from"]
             tx, ty = move["neutral_move"]["to"]
-
-            # Clear old neutral piece position and place in new position
-            self.board[fy][fx] = 0
-            self.board[ty][tx] = "N"
+            self.board[ty][tx] = "N"  # Place the neutral piece in the new position
 
         # Update the current player
         self.current_player = 3 - self.current_player
         return self
 
-    def _clear_l_piece(self, player):
+    def copy(self):
         """
-        Clear the current L piece of the given player from the board.
+        Create a deep copy of the game state.
+        Returns:
+            GameState: A new instance of the game state with the same data.
         """
-        for y in range(4):
-            for x in range(4):
-                if self.board[y][x] == player:
-                    self.board[y][x] = 0
-
-    def is_terminal(self):
-        """
-        Check if the current game state is terminal (no legal moves for the current player).
-        """
-        return len(self.get_legal_moves(self.current_player)) == 0
+        new_state = GameState()
+        new_state.board = [row[:] for row in self.board]
+        new_state.l_positions = self.l_positions.copy()
+        new_state.neutral_positions = self.neutral_positions.copy()
+        new_state.current_player = self.current_player
+        new_state.state_history = self.state_history.copy()  # Copy state history
+        new_state.total_turns = self.total_turns  # Copy turn counter
+        return new_state
     
+#--------------------------------------- Heuristic ---------------------------------------
 
-#--------------------------------Heuristic--------------------------------
+
 
 def evaluate_board(state, player):
     """
-    Heuristic evaluation function for the L-game.
-    Scores the board state based on factors like mobility and control.
-    
+    Ultra-aggressive heuristic evaluation function for the L-game.
+    Focuses almost exclusively on minimizing the opponent's possible moves.
+
     Args:
         state (GameState): The current game state.
         player (int): The player for whom to evaluate the board (1 or 2).
-    
+
     Returns:
         int: A score representing the desirability of the state for the player.
     """
     opponent = 3 - player
 
-    # Number of legal moves for the player
+    # Cache legal moves to avoid redundant computations
     player_moves = len(state.get_legal_moves(player))
-
-    # Number of legal moves for the opponent
     opponent_moves = len(state.get_legal_moves(opponent))
 
-    # Control of the neutral pieces (e.g., closer neutral pieces give advantage)
-    print("L positions", state.l_positions[player])
+    # Check for terminal states early
+    if player_moves == 0:
+        return -math.inf  # Current player has no moves, losing state
+    if opponent_moves == 0:
+        return math.inf  # Opponent has no moves, winning state
+
+    # Neutral piece control (Manhattan distance from player's L-piece)
     neutral_control = distance_to_l(state.neutral_positions, state.l_positions[player])
-    
+
+    # Opponent blockade: Drastically penalize states where the opponent has very few moves
+    # Using cubic scaling for even stronger penalty
+    opponent_blockade = (5 - opponent_moves) ** 3 if opponent_moves < 5 else 0
+
+    # Positioning: Favor central positions slightly and heavily penalize edge positions
+    central_positions = {(1, 1), (1, 2), (2, 1), (2, 2)}
+    l_positions = get_l_positions(
+        state.l_positions[player]['x'],
+        state.l_positions[player]['y'],
+        state.l_positions[player]['config']
+    )
+    central_score = sum(1 for x, y in l_positions if (x, y) in central_positions)
+    edge_penalty = sum(1 for x, y in l_positions if x in {0, 3} or y in {0, 3})
 
     # Combine factors into a weighted score
-    # Favor states with more moves for the player and fewer moves for the opponent
+    # Heavily prioritize reducing the opponent's mobility, even at the cost of minor penalties for player positioning
     score = (
-        10 * player_moves  # Mobility
-        - 10 * opponent_moves  # Limit opponent's mobility
-        + 5 * neutral_control  # Control of neutral pieces
+        10 * player_moves              # Keep a reasonable weight for player's mobility
+        - 30 * opponent_moves          # Very strongly limit opponent's mobility
+        - 5 * neutral_control          # Neutral piece control remains a secondary concern
+        + 50 * opponent_blockade       # Make blocking the opponent the top priority
+        + 2 * central_score            # Slightly reward central positioning
+        - 5 * edge_penalty             # Heavily penalize edge positions
     )
 
     return score
 
-from utils import get_l_positions  # Ensure this is imported
 
 def distance_to_l(neutral_positions, l_data):
     """
@@ -211,189 +274,158 @@ def distance_to_l(neutral_positions, l_data):
         raise ValueError(f"Invalid l_data format: {l_data}")
 
     total_distance = 0
+
+    # Calculate distances from each neutral piece to the nearest L-piece segment
     for nx, ny in neutral_positions:
-        min_distance = float("inf")
-        for lx, ly in l_positions:
-            distance = abs(nx - lx) + abs(ny - ly)  # Manhattan distance
-            min_distance = min(min_distance, distance)
+        min_distance = min(abs(nx - lx) + abs(ny - ly) for lx, ly in l_positions)  # Manhattan distance
         total_distance += min_distance
+
     return total_distance
 
-#--------------------------------Minimax--------------------------------
+#--------------------------------------- Minimax ---------------------------------------
 
-def minimax(state, depth, maximizing_player, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn):
+
+class SymmetryManager:
+    @staticmethod
+    def generate_all_rotations(board):
+        """Generate all rotations of the board."""
+        rotations = []
+        current = board
+        for _ in range(4):
+            current = [list(row) for row in zip(*current[::-1])]
+            rotations.append(tuple(tuple(row) for row in current))
+        return rotations
+
+    @staticmethod
+    def generate_all_symmetries(board):
+        """Generate all symmetrical configurations of the board."""
+        rotations = SymmetryManager.generate_all_rotations(board)
+        reflections = [tuple(tuple(reversed(row)) for row in rotation) for rotation in rotations]
+        return set(rotations + reflections)
+    
+def alpha_beta_pruning(state, depth, alpha, beta, maximizing_player, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn, visited_states=None):
     """
-    Implements the Minimax algorithm.
+    Perform minimax with alpha-beta pruning and symmetry pruning.
 
     Args:
-        state: The current game state.
-        depth: Maximum depth to search (use math.inf for no limit).
-        maximizing_player: True if the current player is the maximizing player.
-        evaluate_fn: Function to evaluate the state (heuristic).
-        get_legal_moves_fn: Function to get legal moves for the current player.
-        apply_move_fn: Function to apply a move and return the resulting state.
-        is_terminal_fn: Function to check if the state is terminal.
-
-    Returns:
-        tuple: (best_move, best_score)
-    """
-    if depth == 0 or is_terminal_fn(state):
-        return None, evaluate_fn(state)
-
-    if maximizing_player:
-        best_score = -math.inf
-        best_move = None
-        for move in get_legal_moves_fn(state, maximizing_player):
-            new_state = apply_move_fn(state, move)
-            _, score = minimax(new_state, depth - 1, False, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn)
-            if score > best_score:
-                best_score = score
-                best_move = move
-        return best_move, best_score
-    else:
-        best_score = math.inf
-        best_move = None
-        for move in get_legal_moves_fn(state, maximizing_player):
-            new_state = apply_move_fn(state, move)
-            _, score = minimax(new_state, depth - 1, True, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn)
-            if score < best_score:
-                best_score = score
-                best_move = move
-        return best_move, best_score
-    
-def alpha_beta_pruning(state, depth, alpha, beta, maximizing_player, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn):
-    """
-    Perform minimax with alpha-beta pruning.
-    
-    Args:
-        state: The current game state.
-        depth: The depth of the search.
+        state: Current game state.
+        depth: Depth to search.
         alpha: Alpha value for pruning.
         beta: Beta value for pruning.
-        maximizing_player: True if the current player is maximizing, False otherwise.
-        evaluate_fn: The evaluation function to score the board.
-        get_legal_moves_fn: Function to get legal moves for the current state.
-        apply_move_fn: Function to apply a move and generate a new state.
-        is_terminal_fn: Function to check if the game is in a terminal state.
-        
-    Returns:
-        best_move: The best move for the current player.
-        score: The score of the best move.
-    """
-    current_player = 1 if maximizing_player else 2  # Determine the current player
-    if depth == 0 or is_terminal_fn(state):
-        print(f"Evaluating terminal state at depth {depth}: {state}")
-        return None, evaluate_fn(state, current_player)  # Pass the current player to evaluate_fn
+        maximizing_player: Whether this is the maximizing player's turn.
+        evaluate_fn: Function to evaluate board states.
+        get_legal_moves_fn: Function to generate legal moves.
+        apply_move_fn: Function to apply a move and return the new state.
+        is_terminal_fn: Function to check if the game is over.
+        visited_states: A set of visited states to prune symmetrical states.
 
-    print(f"Alpha-beta pruning at depth {depth}, maximizing: {maximizing_player}")
-    print(f"State:\n{state}")
-    print(f"Alpha: {alpha}, Beta: {beta}")
+    Returns:
+        best_move: The best move determined by the search.
+        best_score: The score associated with the best move.
+    """
+    if visited_states is None:
+        visited_states = set()
+
+    # Use SymmetryManager to generate symmetries and prune symmetrical states
+    symmetries = SymmetryManager.generate_all_symmetries(state.board)
+    if any(symmetry in visited_states for symmetry in symmetries):
+        return None, evaluate_fn(state, state.current_player)  # Skip symmetrical states
+
+    # Add symmetries of the current state to visited states
+    visited_states.update(symmetries)
+
+    # Terminal node or max depth reached
+    if depth == 0 or is_terminal_fn(state):
+        return None, evaluate_fn(state, state.current_player)
 
     best_move = None
+
     if maximizing_player:
-        max_eval = float("-inf")
-        for move in get_legal_moves_fn(state):
-            print(f"Maximizing, considering move: {move}")
+        max_eval = -math.inf
+        for move in sorted(get_legal_moves_fn(state), key=lambda m: evaluate_fn(apply_move_fn(state.copy(), m), state.current_player), reverse=True):
             new_state = apply_move_fn(state, move)
-            if new_state is None:
-                print(f"Error: new_state is None after applying move: {move}")
-            _, eval = alpha_beta_pruning(new_state, depth - 1, alpha, beta, False, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn)
+            _, eval = alpha_beta_pruning(
+                state=new_state,
+                depth=depth - 1,
+                alpha=alpha,
+                beta=beta,
+                maximizing_player=False,
+                evaluate_fn=evaluate_fn,
+                get_legal_moves_fn=get_legal_moves_fn,
+                apply_move_fn=apply_move_fn,
+                is_terminal_fn=is_terminal_fn,
+                visited_states=visited_states,
+            )
             if eval > max_eval:
                 max_eval = eval
                 best_move = move
             alpha = max(alpha, eval)
             if beta <= alpha:
-                break
+                break  # Prune branches
         return best_move, max_eval
     else:
-        min_eval = float("inf")
-        for move in get_legal_moves_fn(state):
-            print(f"Minimizing, considering move: {move}")
+        min_eval = math.inf
+        for move in sorted(get_legal_moves_fn(state), key=lambda m: evaluate_fn(apply_move_fn(state.copy(), m), state.current_player)):
             new_state = apply_move_fn(state, move)
-            _, eval = alpha_beta_pruning(new_state, depth - 1, alpha, beta, True, evaluate_fn, get_legal_moves_fn, apply_move_fn, is_terminal_fn)
+            _, eval = alpha_beta_pruning(
+                state=new_state,
+                depth=depth - 1,
+                alpha=alpha,
+                beta=beta,
+                maximizing_player=True,
+                evaluate_fn=evaluate_fn,
+                get_legal_moves_fn=get_legal_moves_fn,
+                apply_move_fn=apply_move_fn,
+                is_terminal_fn=is_terminal_fn,
+                visited_states=visited_states,
+            )
             if eval < min_eval:
                 min_eval = eval
                 best_move = move
             beta = min(beta, eval)
             if beta <= alpha:
-                break
+                break  # Prune branches
         return best_move, min_eval
     
-def evaluate_fn(state):
-    """
-    A heuristic evaluation function for the game state.
-    This is a placeholder and should be replaced with a game-specific evaluation.
-
-    Args:
-        state: The game state to evaluate.
-
-    Returns:
-        int: A score indicating the desirability of the state for the maximizing player.
-    """
-    # Example: Favor states with more legal moves for the current player
-    current_player_moves = len(state.get_legal_moves(state.current_player))
-    opponent_moves = len(state.get_legal_moves(3 - state.current_player))
-    return current_player_moves - opponent_moves
-
-
-def is_terminal_fn(state):
-    """
-    Checks if the game state is terminal.
-
-    Args:
-        state: The game state to check.
-
-    Returns:
-        bool: True if the state is terminal, False otherwise.
-    """
-    return not state.get_legal_moves(state.current_player)
-
-
-def apply_move_fn(state, move):
-    """
-    Apply a move to the game state and return the new state.
-
-    Args:
-        state: The current game state.
-        move: The move to apply.
-
-    Returns:
-        state: The new game state.
-    """
-    new_state = state.copy()  # Assume state has a copy method
-    new_state.apply_move(move)
-    return new_state
-
-#--------------------------------Utils--------------------------------
-
+    #--------------------------------------- Utils ---------------------------------------
 def parse_move_input(input_string):
     """
     Parse a human-readable move input string into a structured format.
+    Converts input from 1-based to 0-based indexing.
+    
     Example input: "1 2 0 4 3 1 1"
     Returns:
         dict: A dictionary containing the parsed move:
               {
-                  "L_piece": {"x": 1, "y": 2, "config": 0},
-                  "neutral_move": {"from": (4, 3), "to": (1, 1)} or None
+                  "L_piece": {"x": 0, "y": 1, "config": 0},
+                  "neutral_move": {"from": (3, 2), "to": (0, 0)} or None
               }
     """
     parts = input_string.split()
     if len(parts) < 3 or len(parts) not in {3, 7}:
         raise ValueError("Invalid move format. Expected 3 or 7 parts.")
+    
+    if parts[2].upper() not in {"E", "W", "N", "S"}:
+        raise ValueError("Invalid L-piece orientation. Expected 'E', 'W', 'N', or 'S'.")
+    
+
+    #TODO: If config = letter, convert to number by checking which one of the two numbers is valid move
+    num = lton(int(parts[0]) - 1, int(parts[1]) - 1, parts[2].upper())
+    print("Num:", num)
 
     move = {
         "L_piece": {
-            "x": int(parts[0]),
-            "y": int(parts[1]),
-            "config": int(parts[2])  # Now expects configuration ID
+            "x": int(parts[0]) - 1,
+            "y": int(parts[1]) - 1,
+            "config": num  # Configuration ID remains unchanged
         },
         "neutral_move": None
     }
 
     if len(parts) == 7:
         move["neutral_move"] = {
-            "from": (int(parts[3]), int(parts[4])),
-            "to": (int(parts[5]), int(parts[6]))
+            "from": (int(parts[3]) - 1, int(parts[4]) - 1),
+            "to": (int(parts[5]) - 1, int(parts[6]) - 1)
         }
 
     return move
@@ -418,11 +450,14 @@ def is_position_free(board, x, y, player):
 
 
 def validate_move(board, move, player):
+    if (move["L_piece"]["config"] == None):
+        return False
     """
     Validate a move to ensure it adheres to the game's rules.
     Args:
         board (list[list[int]]): The current game board.
         move (dict): The parsed move dictionary.
+        player (int): The player making the move (1 or 2).
     Returns:
         bool: True if the move is valid, False otherwise.
     """
@@ -430,9 +465,8 @@ def validate_move(board, move, player):
     l_piece = move["L_piece"]
     x, y, config = l_piece["x"], l_piece["y"], l_piece["config"]
     l_positions = get_l_positions(x, y, config)
-    print("L Positions:", l_positions)
 
-    #  Get the current L-piece positions on the board
+    # Get the current L-piece positions on the board
     current_l_positions = []
     for row in range(4):
         for col in range(4):
@@ -441,30 +475,36 @@ def validate_move(board, move, player):
 
     # Ensure the L-piece is moved to a different position
     if set(l_positions) == set(current_l_positions):
-        print("L-piece was not moved")
+        # The L-piece was not moved
         return False
 
+    # Ensure all positions for the new L-piece are within bounds and free
     if not all(is_within_bounds(px, py) for px, py in l_positions):
-        print("Not within bounds")
-    if not all(is_position_free(board, px, py, player) for px, py in l_positions):
-        print("Not free")
-
-    # Ensure all positions are within bounds and free
-    if not all(is_within_bounds(px, py) and is_position_free(board, px, py, player) for px, py in l_positions):
         return False
 
-    # Validate neutral piece move, if applicable
+    # Temporarily "remove" the neutral piece being moved
     neutral_move = move["neutral_move"]
+    temp_board = [row[:] for row in board]
     if neutral_move:
         fx, fy = neutral_move["from"]
         tx, ty = neutral_move["to"]
-        if not (is_within_bounds(tx, ty) and is_position_free(board, tx, ty, 0)):
+        if not is_within_bounds(tx, ty):
             return False
-         # Ensure the neutral piece is not moved to a position occupied by the new L-piece
+        if temp_board[fy][fx] == "N":  # Neutral piece at the source position
+            temp_board[fy][fx] = 0  # Temporarily clear the source position
+        else:
+            return False
         if (tx, ty) in l_positions:
-            print("Neutral piece overlaps with L-piece")
+            # Ensure the neutral piece is not moved to a position occupied by the new L-piece
             return False
-        if board[fy][fx] != "N":
+
+    # Check if all L-piece positions are free on the updated board
+    if not all(is_position_free(temp_board, px, py, player) for px, py in l_positions):
+        return False
+
+    # Validate the neutral piece destination
+    if neutral_move:
+        if temp_board[neutral_move["to"][1]][neutral_move["to"][0]] != 0:
             return False
 
     return True
@@ -473,10 +513,11 @@ def validate_move(board, move, player):
 def get_l_positions(x, y, config):
     """
     Get the grid positions occupied by an L-piece based on its configuration.
+    The (x, y) coordinates represent the corner of the L (where the long and short pieces meet).
     
     Args:
-        x (int): X-coordinate of the L's pivot (corner).
-        y (int): Y-coordinate of the L's pivot (corner).
+        x (int): X-coordinate of the L's corner.
+        y (int): Y-coordinate of the L's corner.
         config (int): Configuration ID (0-7).
                       - 0-3: Rotated clockwise.
                       - 4-7: Mirrored orientations.
@@ -484,23 +525,79 @@ def get_l_positions(x, y, config):
     Returns:
         list[tuple]: List of grid positions occupied by the L-piece.
     """
-    if config == 0:  
-        return [(x, y), (x, y + 1), (x, y + 2), (x + 1, y + 2)]
-    elif config == 1:  
-        return [(x, y), (x, y + 1), (x, y + 2), (x - 1, y + 2)]
-    elif config == 2:  
-        return [(x, y), (x, y - 1), (x, y - 2), (x + 1, y - 2)]
-    elif config == 3: 
-        return [(x, y), (x, y - 1), (x, y - 2), (x - 1, y - 2)]
-    elif config == 4:  
-        return [(x, y), (x + 1, y), (x + 2, y), (x + 2, y - 1)]
-    elif config == 5:  
-        return [(x, y), (x + 1, y), (x + 2, y), (x + 2, y + 1)]
-    elif config == 6: 
-        return [(x, y), (x - 1, y), (x - 2, y), (x - 2, y - 1)]
-    elif config == 7:  
-        return [(x, y), (x - 1, y), (x - 2, y), (x - 2, y + 1)]
+    if config == 0:  # Vertical long, short to the right (corner at top-left)
+        return [(x, y), (x, y + 1), (x, y + 2), (x + 1, y)]
+    elif config == 1:  # Vertical long, short to the left
+        return [(x, y), (x, y + 1), (x, y + 2), (x - 1, y)]
+    elif config == 2:  # Vertical long, short to the right (corner at bottom-left)
+        return [(x, y), (x, y - 1), (x, y - 2), (x + 1, y)]
+    elif config == 3:  # Vertical long, short to the left
+        return [(x, y), (x, y - 1), (x, y - 2), (x - 1, y)]
+    elif config == 4:  # Horizontal long, short down
+        return [(x, y), (x + 1, y), (x + 2, y), (x, y + 1)]
+    elif config == 5:  # Horizontal long, short up
+        return [(x, y), (x + 1, y), (x + 2, y), (x, y - 1)]
+    elif config == 6:  # Horizontal long, short down (corner at right)
+        return [(x, y), (x - 1, y), (x - 2, y), (x, y + 1)]
+    elif config == 7:  # Horizontal long, short up
+        return [(x, y), (x - 1, y), (x - 2, y), (x, y - 1)]
     return []
+
+def lton(x, y, letter):
+    print("Letter:", letter)
+    """
+    Get the grid positions occupied by an L-piece based on its configuration.
+    The (x, y) coordinates represent the corner of the L (where the long and short pieces meet).
+    
+    Args:
+        x (int): X-coordinate of the L's corner.
+        y (int): Y-coordinate of the L's corner.
+        config (int): Configuration ID (0-7).
+                      - 0-3: Rotated clockwise.
+                      - 4-7: Mirrored orientations.
+    
+    Returns:
+        list[tuple]: List of grid positions occupied by the L-piece.
+    """
+    configs = {}
+    if letter == "E":
+        configs = {
+            0: [(x, y), (x, y + 1), (x, y + 2), (x + 1, y)],
+            2: [(x, y), (x, y - 1), (x, y - 2), (x + 1, y)]
+        }
+    elif letter == "W":
+        configs = {
+            1: [(x, y), (x, y + 1), (x, y + 2), (x - 1, y)],
+            3: [(x, y), (x, y - 1), (x, y - 2), (x - 1, y)]
+        }
+    elif letter == "N":
+        configs = {
+            5: [(x, y), (x + 1, y), (x + 2, y), (x, y - 1)],
+            7: [(x, y), (x - 1, y), (x - 2, y), (x, y - 1)]
+        }
+    elif letter == "S":
+        configs = {
+            4: [(x, y), (x + 1, y), (x + 2, y), (x, y + 1)],
+            6: [(x, y), (x - 1, y), (x - 2, y), (x, y + 1)]
+        }
+    
+    for index, config in configs.items():
+        if all(is_within_bounds(px, py) for px, py in config):
+            return index
+
+    return None
+
+def ntol(num):
+    if num == 0 or num == 2:
+        return "E"
+    if num == 1 or num == 3:
+        return "W"
+    if num == 5 or num == 7:
+        return "N"
+    if num == 4 or num == 6:
+        return "S"
+    return "Invalid"
+
 
 
 def apply_l_piece_move(board, x, y, config, player):
@@ -553,45 +650,8 @@ def print_board(board):
         print(" ".join(str(cell) if cell != 0 else "." for cell in row))
     print()
 
-def draw_all_l_configurations():
-    """
-    Draw all 8 configurations of the L-piece in 2 rows of 4, each on a 3x3 board, with 5 spaces between each.
-    """
-    print("\nAll L-piece Configurations (0-7):\n")
-
-    configs = [[0, 0, 0], [1, 0, 1], [0, 2, 2], [1, 2, 3], [0, 1, 4], [0, 0, 5], [2, 1, 6], [2, 0, 7]]
-
-    # Initialize the boards for all 8 configurations
-    boards = []
-    for x, y, c in configs:
-        # Create a blank 3x3 board
-        blank_board = [[" " for _ in range(3)] for _ in range(3)]
-
-        # Get the L-piece positions
-        l_positions = get_l_positions(x, y, c)
-
-        # Mark the L-piece on the blank board
-        for px, py in l_positions:
-            if 0 <= px < 3 and 0 <= py < 3:
-                blank_board[py][px] = "*"
-        
-        # Add the board to the list
-        boards.append((c, blank_board))
-
-    # Print configurations in 2 rows of 4
-    for row_start in range(0, 8, 4):
-        # Print headers (configuration IDs)
-        header_row = "     ".join(f"Config {c:<2}" for c, _ in boards[row_start:row_start + 4])
-        print(header_row)
-
-        # Print the boards row by row
-        for board_row in range(3):  # Each board has 3 rows
-            row = "         ".join(" ".join(board[board_row]) for _, board in boards[row_start:row_start + 4])
-            print("  " + row)
-        
-        print()  # Add a blank line between rows
-
-#--------------------------------Visualizer--------------------------------
+#--------------------------------------- Visualizer ---------------------------------------
+import tkinter as tk
 
 class GameVisualizer:
     def __init__(self, board):
@@ -657,7 +717,7 @@ class GameVisualizer:
         self.draw_board()
         self.window.mainloop()
 
-#--------------------------------Main--------------------------------
+#--------------------------------------- Main ---------------------------------------
 
 
 def human_move(game_state):
@@ -667,7 +727,6 @@ def human_move(game_state):
     print_board(game_state.board)
     while True:
         try:
-            draw_all_l_configurations()
             move_input = input("Enter your move (e.g., '1 2 E 4 3 1 1'): ")
             move = parse_move_input(move_input)
             if validate_move(game_state.board, move, game_state.current_player):
@@ -675,16 +734,15 @@ def human_move(game_state):
             else:
                 print("Invalid move. Please try again.")
         except ValueError as e:
-            print(f"Error: {e}. Try again.")
+            print(f"Error: {e} Try again.")
 
 
-def computer_move(game_state, depth=20):
+def computer_move(game_state, depth=5):
     """
     Determine the computer's move using minimax with alpha-beta pruning.
     """
     print("Computer is thinking...")
-    print("Terminal state:", game_state.is_terminal())
-    move, _ = alpha_beta_pruning(
+    move, val = alpha_beta_pruning(
         state=game_state,
         depth=depth,
         alpha=-math.inf,
@@ -695,7 +753,28 @@ def computer_move(game_state, depth=20):
         apply_move_fn=lambda state, move: debug_apply_move(state, move),
         is_terminal_fn=lambda state: state.is_terminal(),
     )
-    print(f"Computer's Move: {move}")
+    print("Computer's value:", val)
+    adjusted_move = {
+        "L_piece": {
+            "x": move["L_piece"]["x"] + 1,
+            "y": move["L_piece"]["y"] + 1,
+            "config": ntol(move["L_piece"]["config"]),  # Configuration remains unchanged
+        },
+        "neutral_move": None if move["neutral_move"] is None else {
+            "from": (move["neutral_move"]["from"][0] + 1, move["neutral_move"]["from"][1] + 1),
+            "to": (move["neutral_move"]["to"][0] + 1, move["neutral_move"]["to"][1] + 1),
+        },
+    }
+
+    s = f"{adjusted_move["L_piece"]["x"]} {adjusted_move["L_piece"]["y"]} {adjusted_move["L_piece"]["config"]}"
+
+    if adjusted_move["neutral_move"]:
+        s += f" {adjusted_move["neutral_move"]["from"][0]} {adjusted_move["neutral_move"]["from"][1]}"
+        s += f" {adjusted_move["neutral_move"]["to"][0]} {adjusted_move["neutral_move"]["to"][1]}"
+
+    print(f"Computer's move: {s}")
+
+    # input("Press any key to continue...")  # Wait for key input
     return move
 
 def main():
@@ -721,22 +800,25 @@ def main():
         elif s != "y":
             print("Invalid input. Exiting.")
             return
-            
 
     game_state = GameState()
-
     visualizer = GameVisualizer(game_state.board)
 
     # Draw the initial board before the game loop starts
     visualizer.draw_board()
 
-    while not game_state.is_terminal():
+    while not game_state.is_terminal(check_ties=True):
         print(f"\nPlayer {game_state.current_player}'s turn.")
 
         if (mode == "1") or (mode == "2" and game_state.current_player == x):
             # Human move
             move = human_move(game_state)
+            print("\nCurrent Board State:")
+            print_board(game_state.board)
             game_state.apply_move(move)
+            print("\nUpdated Board State:")
+            print_board(game_state.board)
+        
 
             # Update GUI immediately after the human move
             visualizer.update_board(game_state.board)
@@ -752,14 +834,23 @@ def main():
     # Final game over logic
     print("\nFinal Board State:")
     print_board(game_state.board)
-    print(f"Game Over! Player {3 - game_state.current_player} wins!")
+
+    # Check tie conditions
+    board_hash = game_state._hash_board()
+    if game_state.state_history.get(board_hash, 0) >= game_state.max_repetitions:
+        print("Game Over! It's a tie due to repeated states.")
+    elif game_state.total_turns >= game_state.max_turns:
+        print("Game Over! It's a tie due to exceeding the maximum number of turns.")
+    else:
+        print(f"Game Over! Player {3 - game_state.current_player} wins!")
+
     visualizer.run()  # Keeps the GUI window open at the end of the game
     
 def debug_apply_move(state, move):
     """
     Debug wrapper for applying moves to a game state.
     """
-    print(f"Applying move: {move}")
+    # print(f"Applying move: {move}")
     new_state = state.copy()
     if new_state is None:
         print("Error: state.copy() returned None.")
