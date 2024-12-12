@@ -2,6 +2,7 @@ from game_state import GameState
 from utils import parse_move_input, validate_move, print_board, ntol
 from minimax import alpha_beta_pruning
 from heuristic import evaluate_board
+import time
 import math
 from visualizer import GameVisualizer  # Assuming GameVisualizer is defined
 
@@ -23,11 +24,12 @@ def human_move(game_state):
             print(f"Error: {e} Try again.")
 
 
-def computer_move(game_state, depth=5):
+def computer_move(game_state, depth=100):
     """
     Determine the computer's move using minimax with alpha-beta pruning.
     """
     print("Computer is thinking...")
+    start_time = time.time()  # Start timing
     move, val = alpha_beta_pruning(
         state=game_state,
         depth=depth,
@@ -39,7 +41,7 @@ def computer_move(game_state, depth=5):
         apply_move_fn=lambda state, move: debug_apply_move(state, move),
         is_terminal_fn=lambda state: state.is_terminal(),
     )
-    print("Computer's value:", val)
+    # print("Computer's value:", val)
     adjusted_move = {
         "L_piece": {
             "x": move["L_piece"]["x"] + 1,
@@ -51,6 +53,10 @@ def computer_move(game_state, depth=5):
             "to": (move["neutral_move"]["to"][0] + 1, move["neutral_move"]["to"][1] + 1),
         },
     }
+
+    end_time = time.time()  # End timing
+    time_taken = end_time - start_time  # Calculate duration
+    print(f"Time taken for move: {time_taken:.2f} seconds")
 
     s = f"{adjusted_move["L_piece"]["x"]} {adjusted_move["L_piece"]["y"]} {adjusted_move["L_piece"]["config"]}"
 

@@ -753,7 +753,7 @@ def computer_move(game_state, depth=5):
         apply_move_fn=lambda state, move: debug_apply_move(state, move),
         is_terminal_fn=lambda state: state.is_terminal(),
     )
-    print("Computer's value:", val)
+    # print("Computer's value:", val)
     adjusted_move = {
         "L_piece": {
             "x": move["L_piece"]["x"] + 1,
