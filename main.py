@@ -1,5 +1,5 @@
 from game_state import GameState
-from utils import parse_move_input, validate_move, print_board, draw_all_l_configurations, ntol
+from utils import parse_move_input, validate_move, print_board, ntol
 from minimax import alpha_beta_pruning
 from heuristic import evaluate_board
 import math
@@ -13,7 +13,6 @@ def human_move(game_state):
     print_board(game_state.board)
     while True:
         try:
-            draw_all_l_configurations()
             move_input = input("Enter your move (e.g., '1 2 E 4 3 1 1'): ")
             move = parse_move_input(move_input)
             if validate_move(game_state.board, move, game_state.current_player):
@@ -29,8 +28,7 @@ def computer_move(game_state, depth=5):
     Determine the computer's move using minimax with alpha-beta pruning.
     """
     print("Computer is thinking...")
-    print("Terminal state:", game_state.is_terminal())
-    move, _ = alpha_beta_pruning(
+    move, val = alpha_beta_pruning(
         state=game_state,
         depth=depth,
         alpha=-math.inf,
@@ -41,6 +39,7 @@ def computer_move(game_state, depth=5):
         apply_move_fn=lambda state, move: debug_apply_move(state, move),
         is_terminal_fn=lambda state: state.is_terminal(),
     )
+    print("Computer's value:", val)
     adjusted_move = {
         "L_piece": {
             "x": move["L_piece"]["x"] + 1,
@@ -53,7 +52,6 @@ def computer_move(game_state, depth=5):
         },
     }
 
-    print(f"Computer's Move: {adjusted_move}")
     # input("Press any key to continue...")  # Wait for key input
     return move
 
@@ -93,7 +91,12 @@ def main():
         if (mode == "1") or (mode == "2" and game_state.current_player == x):
             # Human move
             move = human_move(game_state)
+            print("\nCurrent Board State:")
+            print_board(game_state.board)
             game_state.apply_move(move)
+            print("\nUpdated Board State:")
+            print_board(game_state.board)
+        
 
             # Update GUI immediately after the human move
             visualizer.update_board(game_state.board)
@@ -120,11 +123,12 @@ def main():
         print(f"Game Over! Player {3 - game_state.current_player} wins!")
 
     visualizer.run()  # Keeps the GUI window open at the end of the game
+    
 def debug_apply_move(state, move):
     """
     Debug wrapper for applying moves to a game state.
     """
-    print(f"Applying move: {move}")
+    # print(f"Applying move: {move}")
     new_state = state.copy()
     if new_state is None:
         print("Error: state.copy() returned None.")
