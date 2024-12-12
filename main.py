@@ -52,6 +52,14 @@ def computer_move(game_state, depth=5):
         },
     }
 
+    s = f"{adjusted_move["L_piece"]["x"]} {adjusted_move["L_piece"]["y"]} {adjusted_move["L_piece"]["config"]}"
+
+    if adjusted_move["neutral_move"]:
+        s += f" {adjusted_move["neutral_move"]["from"][0]} {adjusted_move["neutral_move"]["from"][1]}"
+        s += f" {adjusted_move["neutral_move"]["to"][0]} {adjusted_move["neutral_move"]["to"][1]}"
+
+    print(f"Computer's move: {s}")
+
     # input("Press any key to continue...")  # Wait for key input
     return move
 
