@@ -4,8 +4,8 @@ from utils import get_l_positions
 
 def evaluate_board(state, player):
     """
-    Enhanced heuristic evaluation function for the L-game.
-    Scores the board state based on factors like mobility, neutral piece control, and strategic positioning.
+    Ultra-aggressive heuristic evaluation function for the L-game.
+    Focuses almost exclusively on minimizing the opponent's possible moves.
 
     Args:
         state (GameState): The current game state.
@@ -29,10 +29,11 @@ def evaluate_board(state, player):
     # Neutral piece control (Manhattan distance from player's L-piece)
     neutral_control = distance_to_l(state.neutral_positions, state.l_positions[player])
 
-    # Opponent blockade: Penalize states where the opponent's mobility is restricted
-    opponent_blockade = max(0, 3 - opponent_moves)  # Strong penalty if opponent has <3 moves
+    # Opponent blockade: Drastically penalize states where the opponent has very few moves
+    # Using cubic scaling for even stronger penalty
+    opponent_blockade = (5 - opponent_moves) ** 3 if opponent_moves < 5 else 0
 
-    # Positioning: Reward central positions and penalize edges
+    # Positioning: Favor central positions slightly and heavily penalize edge positions
     central_positions = {(1, 1), (1, 2), (2, 1), (2, 2)}
     l_positions = get_l_positions(
         state.l_positions[player]['x'],
@@ -43,16 +44,18 @@ def evaluate_board(state, player):
     edge_penalty = sum(1 for x, y in l_positions if x in {0, 3} or y in {0, 3})
 
     # Combine factors into a weighted score
+    # Heavily prioritize reducing the opponent's mobility, even at the cost of minor penalties for player positioning
     score = (
-        15 * player_moves             # Strong weight for mobility
-        - 12 * opponent_moves          # Limit opponent's mobility
-        - 5 * neutral_control          # Encourage neutral piece control
-        + 20 * opponent_blockade       # Strongly reward blocking the opponent
-        + 4 * central_score            # Reward central positioning
-        - 3 * edge_penalty             # Penalize edge positions
+        10 * player_moves              # Keep a reasonable weight for player's mobility
+        - 30 * opponent_moves          # Very strongly limit opponent's mobility
+        - 5 * neutral_control          # Neutral piece control remains a secondary concern
+        + 50 * opponent_blockade       # Make blocking the opponent the top priority
+        + 2 * central_score            # Slightly reward central positioning
+        - 5 * edge_penalty             # Heavily penalize edge positions
     )
 
     return score
+
 
 def distance_to_l(neutral_positions, l_data):
     """
