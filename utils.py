@@ -72,7 +72,7 @@ def validate_move(board, move, player):
     l_piece = move["L_piece"]
     x, y, config = l_piece["x"], l_piece["y"], l_piece["config"]
     l_positions = get_l_positions(x, y, config)
-    print("L Positions:", l_positions)
+    # print("L Positions:", l_positions)
 
     #  Get the current L-piece positions on the board
     current_l_positions = []
@@ -83,7 +83,7 @@ def validate_move(board, move, player):
 
     # Ensure the L-piece is moved to a different position
     if set(l_positions) == set(current_l_positions):
-        print("L-piece was not moved")
+        # print("L-piece was not moved")
         return False
 
     if not all(is_within_bounds(px, py) for px, py in l_positions):
@@ -250,41 +250,3 @@ def print_board(board):
         # Replace 0 with ".", 1 and 2 for players, and "N" for neutral pieces
         print(" ".join(str(cell) if cell != 0 else "." for cell in row))
     print()
-
-def draw_all_l_configurations():
-    """
-    Draw all 8 configurations of the L-piece in 2 rows of 4, each on a 3x3 board, with 5 spaces between each.
-    """
-    print("\nAll L-piece Configurations (0-7):\n")
-
-    configs = [[0, 0, 0], [1, 0, 1], [0, 2, 2], [1, 2, 3], [0, 1, 4], [0, 1, 5], [2, 1, 6], [2, 1, 7]]
-
-    # Initialize the boards for all 8 configurations
-    boards = []
-    for x, y, c in configs:
-        # Create a blank 3x3 board
-        blank_board = [[" " for _ in range(3)] for _ in range(3)]
-
-        # Get the L-piece positions
-        l_positions = get_l_positions(x, y, c)
-
-        # Mark the L-piece on the blank board
-        for px, py in l_positions:
-            if 0 <= px < 3 and 0 <= py < 3:
-                blank_board[py][px] = "*"
-        
-        # Add the board to the list
-        boards.append((c, blank_board))
-
-    # Print configurations in 2 rows of 4
-    for row_start in range(0, 8, 4):
-        # Print headers (configuration IDs)
-        header_row = "     ".join(f"Config {c:<2}" for c, _ in boards[row_start:row_start + 4])
-        print(header_row)
-
-        # Print the boards row by row
-        for board_row in range(3):  # Each board has 3 rows
-            row = "         ".join(" ".join(board[board_row]) for _, board in boards[row_start:row_start + 4])
-            print("  " + row)
-        
-        print()  # Add a blank line between rows
