@@ -678,7 +678,7 @@ def human_move(game_state):
             print(f"Error: {e}. Try again.")
 
 
-def computer_move(game_state, depth=3):
+def computer_move(game_state, depth=20):
     """
     Determine the computer's move using minimax with alpha-beta pruning.
     """

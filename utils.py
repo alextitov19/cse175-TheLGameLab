@@ -60,11 +60,14 @@ def is_position_free(board, x, y, player):
 
 
 def validate_move(board, move, player):
+    if (move["L_piece"]["config"] == None):
+        return False
     """
     Validate a move to ensure it adheres to the game's rules.
     Args:
         board (list[list[int]]): The current game board.
         move (dict): The parsed move dictionary.
+        player (int): The player making the move (1 or 2).
     Returns:
         bool: True if the move is valid, False otherwise.
     """
@@ -72,9 +75,8 @@ def validate_move(board, move, player):
     l_piece = move["L_piece"]
     x, y, config = l_piece["x"], l_piece["y"], l_piece["config"]
     l_positions = get_l_positions(x, y, config)
-    print("L Positions:", l_positions)
 
-    #  Get the current L-piece positions on the board
+    # Get the current L-piece positions on the board
     current_l_positions = []
     for row in range(4):
         for col in range(4):
@@ -83,30 +85,36 @@ def validate_move(board, move, player):
 
     # Ensure the L-piece is moved to a different position
     if set(l_positions) == set(current_l_positions):
-        print("L-piece was not moved")
+        # The L-piece was not moved
         return False
 
+    # Ensure all positions for the new L-piece are within bounds and free
     if not all(is_within_bounds(px, py) for px, py in l_positions):
-        print("Not within bounds")
-    if not all(is_position_free(board, px, py, player) for px, py in l_positions):
-        print("Not free")
-
-    # Ensure all positions are within bounds and free
-    if not all(is_within_bounds(px, py) and is_position_free(board, px, py, player) for px, py in l_positions):
         return False
 
-    # Validate neutral piece move, if applicable
+    # Temporarily "remove" the neutral piece being moved
     neutral_move = move["neutral_move"]
+    temp_board = [row[:] for row in board]
     if neutral_move:
         fx, fy = neutral_move["from"]
         tx, ty = neutral_move["to"]
-        if not (is_within_bounds(tx, ty) and is_position_free(board, tx, ty, 0)):
+        if not is_within_bounds(tx, ty):
             return False
-         # Ensure the neutral piece is not moved to a position occupied by the new L-piece
+        if temp_board[fy][fx] == "N":  # Neutral piece at the source position
+            temp_board[fy][fx] = 0  # Temporarily clear the source position
+        else:
+            return False
         if (tx, ty) in l_positions:
-            print("Neutral piece overlaps with L-piece")
+            # Ensure the neutral piece is not moved to a position occupied by the new L-piece
             return False
-        if board[fy][fx] != "N":
+
+    # Check if all L-piece positions are free on the updated board
+    if not all(is_position_free(temp_board, px, py, player) for px, py in l_positions):
+        return False
+
+    # Validate the neutral piece destination
+    if neutral_move:
+        if temp_board[neutral_move["to"][1]][neutral_move["to"][0]] != 0:
             return False
 
     return True
@@ -146,6 +154,7 @@ def get_l_positions(x, y, config):
     return []
 
 def lton(x, y, letter):
+    print("Letter:", letter)
     """
     Get the grid positions occupied by an L-piece based on its configuration.
     The (x, y) coordinates represent the corner of the L (where the long and short pieces meet).
@@ -250,41 +259,3 @@ def print_board(board):
         # Replace 0 with ".", 1 and 2 for players, and "N" for neutral pieces
         print(" ".join(str(cell) if cell != 0 else "." for cell in row))
     print()
-
-def draw_all_l_configurations():
-    """
-    Draw all 8 configurations of the L-piece in 2 rows of 4, each on a 3x3 board, with 5 spaces between each.
-    """
-    print("\nAll L-piece Configurations (0-7):\n")
-
-    configs = [[0, 0, 0], [1, 0, 1], [0, 2, 2], [1, 2, 3], [0, 1, 4], [0, 1, 5], [2, 1, 6], [2, 1, 7]]
-
-    # Initialize the boards for all 8 configurations
-    boards = []
-    for x, y, c in configs:
-        # Create a blank 3x3 board
-        blank_board = [[" " for _ in range(3)] for _ in range(3)]
-
-        # Get the L-piece positions
-        l_positions = get_l_positions(x, y, c)
-
-        # Mark the L-piece on the blank board
-        for px, py in l_positions:
-            if 0 <= px < 3 and 0 <= py < 3:
-                blank_board[py][px] = "*"
-        
-        # Add the board to the list
-        boards.append((c, blank_board))
-
-    # Print configurations in 2 rows of 4
-    for row_start in range(0, 8, 4):
-        # Print headers (configuration IDs)
-        header_row = "     ".join(f"Config {c:<2}" for c, _ in boards[row_start:row_start + 4])
-        print(header_row)
-
-        # Print the boards row by row
-        for board_row in range(3):  # Each board has 3 rows
-            row = "         ".join(" ".join(board[board_row]) for _, board in boards[row_start:row_start + 4])
-            print("  " + row)
-        
-        print()  # Add a blank line between rows
